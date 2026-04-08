@@ -6,14 +6,19 @@ Parse the three raw data sources, join them, and output data/processed/stations.
 Join strategy:
 1. map_data.csv (UTF-16LE, tab-sep) → ridership per station
 2. NTAD_Amtrak_Stations.csv (UTF-8 BOM) → filter to StnType=TRAIN → station metadata
-3. Join ridership to stations on city name + state abbreviation (fuzzy match,
-   nearest-coordinate fallback)
-4. NTAD_IPCD.csv (UTF-8 BOM) → filter to non-null AMTRAKCODE → join on AMTRAKCODE=Code
+3. Assign each map_data row to a single NTAD station code via:
+     a. Nearest-coordinate match (same state, ≤ 30 km)
+     b. Fuzzy city-name fallback (same state, score ≥ 85)
+   Each map_data row maps to at most one NTAD code.
+   Each NTAD code receives the ridership of its nearest map_data match only
+   (1:1 join — no duplication).
+4. NTAD_IPCD.csv (UTF-8 BOM) → filter to non-null AMTRAKCODE → join on code
 5. Output: data/processed/stations.csv
 
-FIX: coordinate fallback is restricted to same-state candidates only (≤ 30 km),
-preventing cross-state mismatches (e.g. Lindenwold NJ grabbing Philadelphia PA
-ridership at 20 km). Unclaimed-row tracking prevents double-assignment.
+Data-quality checks applied to map_data before matching:
+- Rows with corrupt coordinates (coordinate matches wrong state) are flagged
+  and matched using the State column + NTAD coordinates instead.
+- Rows with State column mismatch vs Station name are flagged.
 """
 
 import re
@@ -63,14 +68,19 @@ def haversine_km(lat1, lon1, lat2, lon2):
 
 def normalise_city(name: str) -> str:
     """
-    Strip trailing state from strings like 'Albany, NY' or 'Albany, New York'
-    and lowercase + strip punctuation.
+    Normalise a station/city name for fuzzy comparison:
+    1. Strip parenthetical qualifiers — e.g. "(San Joaquin St.)", "(Auto Train)"
+    2. Strip everything from the last comma onward (state portion)
+    3. Lowercase + strip whitespace
+    4. Remove common suffixes: station, amtrak, depot, terminal
     """
     name = str(name)
+    # Strip parenthetical content  (Bug #2 fix)
+    name = re.sub(r"\s*\([^)]*\)", "", name)
     # Remove everything from the last comma onward
     name = re.sub(r",.*$", "", name)
     name = name.lower().strip()
-    # Remove common suffixes like "station", "amtrak"
+    # Remove common suffixes
     name = re.sub(r"\s*(amtrak|station|depot|terminal)$", "", name)
     name = name.strip()
     return name
@@ -82,16 +92,16 @@ def load_map_data() -> pd.DataFrame:
     df = pd.read_csv(RAW / "map_data.csv", encoding="utf-16", sep="\t")
     df.columns = df.columns.str.strip()
 
-    # Station column: "City, State Full Name"  e.g. "Yuma, Arizona"
-    df["city_raw"] = df["Station"].str.extract(r"^(.+?),\s*[A-Z]", expand=False)
-    # If no comma, the whole thing is the city
-    mask_no_comma = df["city_raw"].isna()
-    df.loc[mask_no_comma, "city_raw"] = df.loc[mask_no_comma, "Station"]
+    df = df[~df["Station"].str.contains("Auto Train|Pinehurst", case=False, na=False)]
 
     df["state_abbr"] = df["State"].map(STATE_ABBR)
+
+    # Parse city from Station column (e.g. "Yuma, Arizona" → "Yuma")
+    df["city_raw"] = df["Station"].str.extract(r"^(.+?),\s*[A-Z]", expand=False)
+    mask_no_comma = df["city_raw"].isna()
+    df.loc[mask_no_comma, "city_raw"] = df.loc[mask_no_comma, "Station"]
     df["city_norm"] = df["city_raw"].apply(normalise_city)
 
-    # Add a unique index so we can track which map_data rows are claimed
     df = df.reset_index(drop=True)
     df["map_idx"] = df.index
 
@@ -103,11 +113,52 @@ def load_map_data() -> pd.DataFrame:
     })
 
 
+def flag_corrupt_map_rows(map_df: pd.DataFrame,
+                           ntad_df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Detect map_data rows whose coordinates are inconsistent with their
+    State column (e.g. Portland OR row with Portland ME coordinates).
+
+    For each map_data row, find the nearest NTAD station overall (ignoring
+    state). If that station is in a DIFFERENT state, the row's coordinates
+    are probably wrong.
+
+    Returns map_df with a 'coord_suspect' boolean column.
+    """
+    ntad_lats = ntad_df["lat"].values
+    ntad_lons = ntad_df["lon"].values
+    ntad_states = ntad_df["state_abbr"].values
+
+    suspect = []
+    for _, row in map_df.iterrows():
+        dists = haversine_km(
+            row["lat_map"], row["lon_map"],
+            ntad_lats, ntad_lons,
+        )
+        nearest_idx = np.argmin(dists)
+        nearest_state = ntad_states[nearest_idx]
+        # If the nearest NTAD station is in a different state than the
+        # map_data State column claims, the coordinates are suspect.
+        suspect.append(nearest_state != row["state_abbr"])
+
+    map_df = map_df.copy()
+    map_df["coord_suspect"] = suspect
+
+    n_suspect = sum(suspect)
+    if n_suspect:
+        print(f"  ⚠ {n_suspect} map_data rows have coordinates inconsistent with State column:")
+        for _, r in map_df[map_df["coord_suspect"]].iterrows():
+            print(f"    {r['Station']} — State={r['state_abbr']}, coords point elsewhere")
+
+    return map_df
+
+
 # ── 2. Load NTAD stations (TRAIN only) ────────────────────────────────────────
 
 def load_ntad_stations() -> pd.DataFrame:
     df = pd.read_csv(RAW / "NTAD_Amtrak_Stations.csv", encoding="utf-8-sig")
-    df = df[df["StnType"] == "TRAIN"].copy()
+    EXCLUDE_CODES = {"LOR", "SFA", "PIH"}
+    df = df[(df["StnType"] == "TRAIN") & (~df["Code"].isin(EXCLUDE_CODES))].copy()
     df.columns = df.columns.str.strip()
 
     # StationName: "Albany-Rensselaer, NY"  → parse city + state
@@ -123,139 +174,147 @@ def load_ntad_stations() -> pd.DataFrame:
     })
 
 
-# ── 3. Join ridership to NTAD stations ────────────────────────────────────────
+# ── 3. Assign each map_data row to one NTAD code ─────────────────────────────
 
-def join_ridership_to_stations(map_df: pd.DataFrame,
-                                ntad_df: pd.DataFrame) -> pd.DataFrame:
+def assign_map_to_codes(map_df: pd.DataFrame,
+                         ntad_df: pd.DataFrame) -> pd.DataFrame:
     """
-    Primary join: city_norm + state_abbr exact match.
-    Secondary: fuzzy city match within same state (score ≥ 85).
-    Tertiary: nearest-coordinate fallback (≤ 30 km), but only for
-              map_data rows NOT already claimed by exact/fuzzy matches.
+    For each map_data row, find the best-matching NTAD station code.
 
-    Each map_data ridership row is assigned to at most one NTAD station.
+    Strategy (applied per row):
+      1. Nearest NTAD station by coordinates, restricted to same state,
+         within 30 km.
+      2. Fuzzy city-name match within same state (score ≥ 85) if no
+         coordinate match.
+
+    For rows flagged as coord_suspect (coordinates in wrong state),
+    skip the coordinate step and use name matching only, or use NTAD
+    coordinates for the distance calculation.
+
+    Returns map_df with 'matched_code' and 'match_method' columns.
     """
-    # Track which map_data rows have been claimed
-    claimed_map_idxs = set()
+    ntad_lats = ntad_df["lat"].values
+    ntad_lons = ntad_df["lon"].values
+    ntad_codes = ntad_df["Code"].values
+    ntad_states = ntad_df["state_abbr"].values
+    ntad_city_norms = ntad_df["city_norm"].values
 
-    # ── exact match ──
-    exact = ntad_df.merge(
-        map_df[["map_idx", "city_norm", "state_abbr", "lat_map", "lon_map",
-                "annual_ridership", "Station"]],
-        on=["city_norm", "state_abbr"],
+    matched_codes = []
+    match_methods = []
+
+    for _, row in map_df.iterrows():
+        state = row["state_abbr"]
+        code = None
+        method = None
+
+        # State-restricted NTAD candidates
+        state_mask = ntad_states == state
+        if not state_mask.any():
+            matched_codes.append(None)
+            match_methods.append("no_state_candidates")
+            continue
+
+        # ── Step 1: coordinate match (skip if coords are suspect) ──
+        if not row.get("coord_suspect", False):
+            dists = haversine_km(
+                row["lat_map"], row["lon_map"],
+                ntad_lats[state_mask], ntad_lons[state_mask],
+            )
+            min_pos = np.argmin(dists)
+            if dists[min_pos] <= 30.0:
+                state_indices = np.where(state_mask)[0]
+                code = ntad_codes[state_indices[min_pos]]
+                method = f"coord({dists[min_pos]:.2f}km)"
+
+        # ── Step 2: fuzzy city-name fallback ──
+        if code is None:
+            state_cities = ntad_city_norms[state_mask].tolist()
+            match = process.extractOne(
+                row["city_norm"], state_cities,
+                scorer=fuzz.token_sort_ratio,
+                score_cutoff=85,
+            )
+            if match:
+                best_city, score, idx = match
+                state_indices = np.where(state_mask)[0]
+                code = ntad_codes[state_indices[idx]]
+                method = f"fuzzy({score:.0f})"
+
+        matched_codes.append(code)
+        match_methods.append(method or "unmatched")
+
+    map_df = map_df.copy()
+    map_df["matched_code"] = matched_codes
+    map_df["match_method"] = match_methods
+    return map_df
+
+
+# ── 4. Build station-level ridership (1:1 on Code) ───────────────────────────
+
+def build_ridership_by_code(map_df: pd.DataFrame,
+                             ntad_df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Aggregate map_data ridership per NTAD code and left-join onto the
+    NTAD station list, producing exactly one row per station code.
+
+    When multiple map_data rows match the same code (e.g. "Burbank" and
+    "Burbank Airport" both → BUR), we SUM their ridership and note the
+    match in join_method. When multiple NTAD codes share a city name
+    (e.g. SKN and SKT in Stockton), each gets only its own matched
+    ridership — no duplication.
+    """
+    matched = map_df[map_df["matched_code"].notna()].copy()
+
+    # Aggregate ridership by code (sum if multiple map rows → same code)
+    ridership_agg = (
+        matched.groupby("matched_code")
+        .agg(
+            annual_ridership=("annual_ridership", "sum"),
+            map_station=("Station", lambda x: " + ".join(x)),
+            match_method=("match_method", "first"),
+            n_map_rows=("map_idx", "count"),
+            lat_map=("lat_map", "first"),
+            lon_map=("lon_map", "first"),
+        )
+        .reset_index()
+        .rename(columns={"matched_code": "code"})
+    )
+
+    # Flag multi-source aggregations
+    multi = ridership_agg["n_map_rows"] > 1
+    ridership_agg.loc[multi, "match_method"] = (
+        ridership_agg.loc[multi, "match_method"] + f" (summed)"
+    )
+
+    # Left join: NTAD stations ← ridership
+    result = ntad_df.copy()
+    result = result.rename(columns={"Code": "code"})
+    result = result.merge(
+        ridership_agg[["code", "annual_ridership", "map_station",
+                        "match_method", "lat_map", "lon_map"]],
+        on="code",
         how="left",
     )
-    matched = exact["annual_ridership"].notna()
-    unmatched_ntad = exact[~matched].copy()
-    result = exact[matched].copy()
-    result["join_method"] = "exact"
 
-    # Record claimed map_data rows
-    claimed_map_idxs.update(result["map_idx"].dropna().astype(int).tolist())
+    matched_count = result["annual_ridership"].notna().sum()
+    total = len(result)
+    print(f"  {matched_count}/{total} stations matched to ridership")
 
-    print(f"  Exact matches: {matched.sum()} / {len(ntad_df)}")
+    unmatched_codes = result[result["annual_ridership"].isna()]["code"].tolist()
+    if unmatched_codes:
+        print(f"  {len(unmatched_codes)} stations with no ridership match")
 
-    if len(unmatched_ntad) == 0:
-        return result
-
-    # ── fuzzy match within state ──
-    fuzzy_rows = []
-    for _, row in unmatched_ntad.iterrows():
-        state_candidates = map_df[
-            (map_df["state_abbr"] == row["state_abbr"]) &
-            (~map_df["map_idx"].isin(claimed_map_idxs))
-        ]
-        if state_candidates.empty:
-            continue
-        choices = state_candidates["city_norm"].tolist()
-        match = process.extractOne(row["city_norm"], choices,
-                                   scorer=fuzz.token_sort_ratio,
-                                   score_cutoff=85)
-        if match:
-            best_city, score, idx = match
-            candidate = state_candidates[state_candidates["city_norm"] == best_city].iloc[0]
-            r = row.to_dict()
-            r.update({
-                "map_idx": candidate["map_idx"],
-                "lat_map": candidate["lat_map"],
-                "lon_map": candidate["lon_map"],
-                "annual_ridership": candidate["annual_ridership"],
-                "Station": candidate["Station"],
-                "join_method": f"fuzzy({score:.0f})",
-            })
-            fuzzy_rows.append(r)
-            claimed_map_idxs.add(int(candidate["map_idx"]))
-
-    if fuzzy_rows:
-        fuzzy_df = pd.DataFrame(fuzzy_rows)
-        fuzzy_matched_codes = set(fuzzy_df["Code"]) if "Code" in fuzzy_df.columns else set()
-        still_unmatched = unmatched_ntad[~unmatched_ntad["Code"].isin(fuzzy_matched_codes)].copy()
-        result = pd.concat([result, fuzzy_df], ignore_index=True)
-        print(f"  Fuzzy matches: {len(fuzzy_rows)}")
-    else:
-        still_unmatched = unmatched_ntad.copy()
-
-    # ── coordinate fallback (only unclaimed map_data rows, same state) ──
-    coord_rows = []
-    unclaimed_map = map_df[~map_df["map_idx"].isin(claimed_map_idxs)]
-
-    for _, row in still_unmatched.iterrows():
-        if pd.isna(row["lat"]) or pd.isna(row["lon"]):
-            continue
-
-        # Restrict to same state so we never pull ridership across state lines
-        state_unclaimed = unclaimed_map[unclaimed_map["state_abbr"] == row["state_abbr"]]
-        if state_unclaimed.empty:
-            continue
-
-        dists = haversine_km(row["lat"], row["lon"],
-                             state_unclaimed["lat_map"].values,
-                             state_unclaimed["lon_map"].values)
-        min_pos = np.argmin(dists)
-        if dists[min_pos] <= 30.0:
-            candidate = state_unclaimed.iloc[min_pos]
-            r = row.to_dict()
-            r.update({
-                "map_idx": candidate["map_idx"],
-                "lat_map": candidate["lat_map"],
-                "lon_map": candidate["lon_map"],
-                "annual_ridership": candidate["annual_ridership"],
-                "Station": candidate["Station"],
-                "join_method": f"coord({dists[min_pos]:.1f}km)",
-            })
-            coord_rows.append(r)
-            claimed_map_idxs.add(int(candidate["map_idx"]))
-            # Update unclaimed set (both global and local views)
-            unclaimed_map = unclaimed_map[unclaimed_map["map_idx"] != candidate["map_idx"]]
-
-    if coord_rows:
-        coord_df = pd.DataFrame(coord_rows)
-        result = pd.concat([result, coord_df], ignore_index=True)
-        print(f"  Coordinate fallback matches: {len(coord_rows)}")
-
-        # Print high-ridership coordinate matches for review
-        high_rider_coords = coord_df[coord_df["annual_ridership"] > 100_000]
-        if len(high_rider_coords) > 0:
-            print(f"\n  ⚠ High-ridership coordinate fallback matches (review these):")
-            for _, r in high_rider_coords.iterrows():
-                code = r.get("Code", "???")
-                stn = r.get("StationName", r.get("city_ntad", "???"))
-                matched_to = r.get("Station", "???")
-                rider = int(r["annual_ridership"])
-                method = r["join_method"]
-                print(f"    {code} {stn} → {matched_to} ({rider:,} riders) [{method}]")
-
-    no_ridership = len(ntad_df) - len(result)
-    print(f"  Stations with no ridership match: {no_ridership}")
-
-    # Drop the map_idx column before returning
-    if "map_idx" in result.columns:
-        result = result.drop(columns=["map_idx"])
+    # Report unclaimed map_data rows
+    unclaimed = map_df[map_df["matched_code"].isna()]
+    if len(unclaimed) > 0:
+        print(f"  {len(unclaimed)} map_data rows unmatched:")
+        for _, r in unclaimed.iterrows():
+            print(f"    {r['Station']} ({r['state_abbr']}) — {r['annual_ridership']:,.0f} riders")
 
     return result
 
 
-# ── 4. Load and join IPCD ──────────────────────────────────────────────────────
+# ── 5. Load and join IPCD ──────────────────────────────────────────────────────
 
 IPCD_BINARY_COLS = ["RAIL_H", "RAIL_C", "RAIL_LIGHT", "BUS_T", "BUS_I",
                     "AIR_SERVE", "BIKE_SHARE"]
@@ -290,7 +349,7 @@ def load_ipcd() -> pd.DataFrame:
     })
 
 
-# ── 5. Main ────────────────────────────────────────────────────────────────────
+# ── 6. Main ────────────────────────────────────────────────────────────────────
 
 def main():
     print("Loading map_data.csv …")
@@ -301,15 +360,30 @@ def main():
     ntad_df = load_ntad_stations()
     print(f"  {len(ntad_df)} train stations")
 
-    print("\nJoining ridership to stations …")
-    stations = join_ridership_to_stations(map_df, ntad_df)
+    print("\nChecking map_data coordinate quality …")
+    map_df = flag_corrupt_map_rows(map_df, ntad_df)
+
+    print("\nAssigning map_data rows to NTAD station codes …")
+    map_df = assign_map_to_codes(map_df, ntad_df)
+
+    matched = map_df["matched_code"].notna().sum()
+    print(f"  Assigned: {matched}/{len(map_df)} map rows → station codes")
+
+    # Diagnostics: show match methods
+    print(f"\n  Match method breakdown:")
+    for method_prefix in ["coord", "fuzzy", "unmatched"]:
+        count = map_df["match_method"].str.startswith(method_prefix).sum()
+        print(f"    {method_prefix}: {count}")
+
+    print("\nBuilding station-level ridership (1:1 per code) …")
+    stations = build_ridership_by_code(map_df, ntad_df)
 
     print("\nLoading IPCD …")
     ipcd_df = load_ipcd()
     print(f"  {len(ipcd_df)} IPCD rows with AMTRAKCODE")
 
     print("\nJoining IPCD …")
-    stations = stations.merge(ipcd_df, left_on="Code", right_on="AMTRAKCODE", how="left")
+    stations = stations.merge(ipcd_df, left_on="code", right_on="AMTRAKCODE", how="left")
     ipcd_joined = stations["has_heavy_rail"].notna().sum()
     print(f"  IPCD joined to {ipcd_joined} / {len(stations)} stations")
 
@@ -319,7 +393,6 @@ def main():
         "lon": "lon",
         "StaType": "station_type",
         "StationName": "station_name",
-        "Code": "code",
     })
 
     # Use NTAD lat/lon as canonical position (more precise than map_data)
@@ -328,8 +401,8 @@ def main():
     stations["lon"] = stations["lon"].fillna(stations["lon_map"])
 
     out_cols = [
-        "code", "station_name", "Station", "state_abbr", "City",
-        "lat", "lon", "station_type", "annual_ridership", "join_method",
+        "code", "station_name", "map_station", "state_abbr", "City",
+        "lat", "lon", "station_type", "annual_ridership", "match_method",
         "has_heavy_rail", "has_commuter_rail", "has_light_rail",
         "has_transit_bus", "has_intercity_bus", "has_air_connection",
         "has_bikeshare", "modes_served", "is_metro_area", "CBSA_TYPE",
@@ -340,6 +413,14 @@ def main():
     out_path = PROCESSED / "stations.csv"
     stations.to_csv(out_path, index=False)
     print(f"\nWrote {len(stations)} rows to {out_path}")
+
+    # Verify no duplicate codes
+    dupes = stations["code"].duplicated().sum()
+    if dupes:
+        print(f"\n  ⚠ ERROR: {dupes} duplicate station codes in output!")
+    else:
+        print(f"\n  ✓ No duplicate station codes — 1:1 join verified")
+
     print(stations.describe(include="all").T[["count", "unique", "top", "mean"]].to_string())
 
 

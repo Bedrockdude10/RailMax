@@ -51,7 +51,7 @@ CATEGORICAL_FEATURES = [
 
 # GTFS-derived features (computed by src/build_gtfs_features.py)
 GTFS_FEATURES = [
-    "daily_departures",
+    "weekly_departures",
     "num_routes_served",
     "is_terminal",
     "avg_dwell_time_sec",
@@ -60,7 +60,7 @@ GTFS_FEATURES = [
     "num_directions",
     "avg_route_length_km",
     "max_route_length_km",
-    "num_weekday_trips",
+    "weekly_trips",
     "pct_long_distance",
 ]
 
@@ -74,7 +74,12 @@ ACS_FEATURES = [
     "median_household_income",
 ]
 
-ALL_FEATURES = BINARY_IPCD_FEATURES + NUMERIC_V0_FEATURES + CATEGORICAL_FEATURES + GTFS_FEATURES + ACS_FEATURES
+# College proximity features (computed by src/build_college_features.py)
+COLLEGE_FEATURES = [
+    "college_enrollment_15km",
+]
+
+ALL_FEATURES = BINARY_IPCD_FEATURES + NUMERIC_V0_FEATURES + CATEGORICAL_FEATURES + GTFS_FEATURES + ACS_FEATURES + COLLEGE_FEATURES
 
 TARGET = "annual_ridership"
 
@@ -161,6 +166,11 @@ def load_stations(path: Optional[Path] = None) -> pd.DataFrame:
         if col not in df.columns:
             df[col] = np.nan
 
+    # ── College features: 0 for stations with no colleges nearby ──
+    for col in COLLEGE_FEATURES:
+        if col not in df.columns:
+            df[col] = 0.0
+
     return df
 
 
@@ -194,7 +204,7 @@ if __name__ == "__main__":
     train, holdout = get_train_test_split(df)
     print(f"Train: {len(train)}, Holdout: {len(holdout)}")
     print("\nHoldout stations:")
-    name_col = "station_name" if "station_name" in holdout.columns else "Station"
+    name_col = "station_name" if "station_name" in holdout.columns else "map_station"
     print(holdout[[name_col, "annual_ridership"]].to_string(index=False))
     print("\nFeature null counts:")
     print(df[ALL_FEATURES].isna().sum().to_string())

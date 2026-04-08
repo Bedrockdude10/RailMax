@@ -153,7 +153,7 @@ def main():
 
     X = get_feature_matrix(df)
     y_log = df["log_ridership"].values
-    name_col = df["station_name"] if "station_name" in df.columns else df["Station"]
+    name_col = df["station_name"] if "station_name" in df.columns else df["map_station"]
 
     print(f"\nFeatures ({len(X.columns)}): {X.columns.tolist()}")
 

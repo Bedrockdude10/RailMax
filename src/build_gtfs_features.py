@@ -8,8 +8,9 @@ Filters applied:
   - route_type = 2 (rail only, no Thruway buses)
   - agency_id = 51 (Amtrak only)
 
-"Typical weekday" = service_id where monday=1 AND friday=1
-(proxy for a regular Mon-Fri service pattern).
+Uses ALL service patterns (not just Mon–Fri) so tri-weekly routes like
+the Sunset Limited and Cardinal are included.  Departure/trip counts
+are expressed per week using the sum of days_per_week from calendar.txt.
 
 Run directly:
     python src/build_gtfs_features.py
@@ -63,22 +64,24 @@ def load_gtfs():
     ]["route_id"].unique()
     print(f"  Rail routes (agency 51): {len(rail_routes)}")
 
-    # Weekday service_ids: monday=1 AND friday=1
-    weekday_sids = calendar[
-        (calendar["monday"] == 1) & (calendar["friday"] == 1)
-    ]["service_id"].unique()
-    print(f"  Weekday service_ids: {len(weekday_sids)}")
+    # All rail trips (no weekday filter — include tri-weekly routes etc.)
+    trips_filt = trips[trips["route_id"].isin(rail_routes)].copy()
+    print(f"  Rail trip patterns (all service days): {len(trips_filt)}")
 
-    # Trips: weekday + rail routes
-    trips_filt = trips[
-        trips["route_id"].isin(rail_routes) &
-        trips["service_id"].isin(weekday_sids)
-    ].copy()
-    print(f"  Weekday rail trips: {len(trips_filt)}")
+    # Compute days_per_week per service_id for weekly trip counts
+    calendar["days_per_week"] = (
+        calendar["monday"] + calendar["tuesday"] + calendar["wednesday"]
+        + calendar["thursday"] + calendar["friday"]
+        + calendar["saturday"] + calendar["sunday"]
+    )
+    trips_filt = trips_filt.merge(
+        calendar[["service_id", "days_per_week"]], on="service_id", how="left"
+    )
+    trips_filt["days_per_week"] = trips_filt["days_per_week"].fillna(0)
 
     # Keep only stop_times for filtered trips
     st_filt = stop_times[stop_times["trip_id"].isin(trips_filt["trip_id"])].copy()
-    print(f"  Stop-time rows (weekday rail): {len(st_filt)}")
+    print(f"  Stop-time rows (all rail): {len(st_filt)}")
 
     return rail_routes, trips_filt, st_filt, stops
 
@@ -90,7 +93,7 @@ def compute_per_stop_features(rail_routes, trips_filt, st_filt, stops):
 
     # Merge trip metadata into stop_times
     st = st_filt.merge(
-        trips_filt[["trip_id", "route_id", "direction_id"]],
+        trips_filt[["trip_id", "route_id", "direction_id", "days_per_week"]],
         on="trip_id", how="left"
     )
 
@@ -140,9 +143,9 @@ def compute_per_stop_features(rail_routes, trips_filt, st_filt, stops):
     # ── Aggregate per stop_id ──
     agg = {}
 
-    # daily_departures / num_weekday_trips: distinct trip_ids per stop
-    daily_dep = st.groupby("stop_id")["trip_id"].nunique().rename("daily_departures")
-    agg["daily_departures"] = daily_dep
+    # weekly_departures: sum of days_per_week across trip patterns per stop
+    weekly_dep = st.groupby("stop_id")["days_per_week"].sum().rename("weekly_departures")
+    agg["weekly_departures"] = weekly_dep
 
     # num_routes_served
     num_routes = st.groupby("stop_id")["route_id"].nunique().rename("num_routes_served")
@@ -159,7 +162,7 @@ def compute_per_stop_features(rail_routes, trips_filt, st_filt, stops):
     avg_dwell = st.groupby("stop_id")["dwell_sec"].mean().rename("avg_dwell_time_sec")
     agg["avg_dwell_time_sec"] = avg_dwell
 
-    # service_span_hours: (max dep - min dep) on weekday
+    # service_span_hours: (max dep - min dep) across all service patterns
     span = st.groupby("stop_id").apply(
         lambda g: (g["dep_sec"].max() - g["dep_sec"].min()) / 3600.0,
         include_groups=False,
@@ -180,8 +183,8 @@ def compute_per_stop_features(rail_routes, trips_filt, st_filt, stops):
     agg["avg_route_length_km"] = avg_rlen
     agg["max_route_length_km"] = max_rlen
 
-    # num_weekday_trips (same as daily_departures, kept as separate column per spec)
-    agg["num_weekday_trips"] = daily_dep.rename("num_weekday_trips")
+    # weekly_trips: same as weekly_departures (kept as separate column for clarity)
+    agg["weekly_trips"] = weekly_dep.rename("weekly_trips")
 
     # pct_long_distance: fraction of routes > 500km serving this stop
     def pct_long(g):
@@ -295,7 +298,7 @@ def match_stops_to_stations(feat_df: pd.DataFrame, stations: pd.DataFrame) -> pd
 
 
 GTFS_FEATURE_COLS = [
-    "daily_departures",
+    "weekly_departures",
     "num_routes_served",
     "is_terminal",
     "avg_dwell_time_sec",
@@ -304,7 +307,7 @@ GTFS_FEATURE_COLS = [
     "num_directions",
     "avg_route_length_km",
     "max_route_length_km",
-    "num_weekday_trips",
+    "weekly_trips",
     "pct_long_distance",
 ]
 
@@ -321,8 +324,8 @@ def join_to_stations(feat_df: pd.DataFrame, stations: pd.DataFrame) -> pd.DataFr
     # For integer/binary columns use max instead of mean where it makes sense
     agg_rules["is_terminal"] = "max"
     agg_rules["num_directions"] = "max"
-    agg_rules["daily_departures"] = "sum"
-    agg_rules["num_weekday_trips"] = "sum"
+    agg_rules["weekly_departures"] = "sum"
+    agg_rules["weekly_trips"] = "sum"
     agg_rules["num_routes_served"] = "sum"
 
     station_feats = matched.groupby("matched_code").agg(agg_rules).reset_index()
@@ -353,7 +356,7 @@ def main():
     # Diagnostics: show a sample of matches
     sample = feat_df[feat_df["matched_code"].notna()].head(10)[
         ["stop_id", "stop_name", "matched_code", "match_method",
-         "daily_departures", "num_routes_served", "avg_route_length_km"]
+         "weekly_departures", "num_routes_served", "avg_route_length_km"]
     ]
     print("\nSample matches:")
     print(sample.to_string(index=False))
