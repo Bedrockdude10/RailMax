@@ -1,0 +1,10 @@
+# Direct dependencies — install with: pip install -r requirements.txt
+interpret==0.7.8
+kaleido==1.2.0
+numpy==2.4.4
+pandas==3.0.2
+plotly==6.6.0
+rapidfuzz==3.14.5
+scikit-learn==1.8.0
+scipy==1.17.1
+streamlit==1.56.0
