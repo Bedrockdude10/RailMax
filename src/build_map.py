@@ -409,6 +409,7 @@ HTML_TEMPLATE = """\
   <button class="filter-btn active" data-filter="all">All stations</button>
   <button class="filter-btn" data-filter="underserved">Underserved (&gt;1.3&times;)</button>
   <button class="filter-btn" data-filter="top20">Top 20 targets</button>
+  <button class="filter-btn" data-filter="suppressed">Suppressed demand</button>
   <div class="sep"></div>
   <button class="filter-btn active" data-seg="all_seg">All segments</button>
   <button class="filter-btn" data-seg="hot">Underserved (&gt;2&times;)</button>
@@ -426,6 +427,7 @@ HTML_TEMPLATE = """\
     <div class="legend-row"><div class="legend-dot" style="background:#eab308"></div><span>1.3 &ndash; 2.0&times; moderate gap</span></div>
     <div class="legend-row"><div class="legend-dot" style="background:#22c55e"></div><span>0.7 &ndash; 1.3&times; well-matched</span></div>
     <div class="legend-row"><div class="legend-dot" style="background:#06b6d4"></div><span>&lt; 0.7&times; overpredicted</span></div>
+    <div class="legend-row"><div class="legend-dot" style="background:#a855f7"></div><span>&lt; 0.7&times; + low service &mdash; suppressed demand</span></div>
   </div>
   <div class="legend-section">
     <h3>Segment score (avg endpoints)</h3>
@@ -503,19 +505,23 @@ const stationLayer = L.layerGroup().addTo(map);
 let allMarkers = [];
 
 STATIONS.forEach(s => {
+  const isSuppressed = s.ratio !== null && s.ratio < 0.7
+                    && s.min_trips !== null && s.min_trips <= 14;
+  const dotColor = isSuppressed ? '#a855f7' : s.color;
+
   const marker = L.circleMarker([s.lat, s.lon], {
-    radius: s.radius, fillColor: s.color,
+    radius: s.radius, fillColor: dotColor,
     color: 'rgba(0,0,0,0.5)', weight: 1, opacity: 1, fillOpacity: 0.85,
   });
 
-  const labelBg     = s.color + '22';
-  const labelBorder = s.color + '66';
+  const labelBg     = dotColor + '22';
+  const labelBorder = dotColor + '66';
   marker.bindPopup(`
     <div class="popup-name">${s.name}</div>
     <div class="popup-row"><span>Annual ridership</span><span>${s.actual.toLocaleString()}</span></div>
     <div class="popup-row"><span>Model predicted</span><span>${s.predicted.toLocaleString()}</span></div>
-    <div class="popup-label" style="color:${s.color};background:${labelBg};border:1px solid ${labelBorder}">
-      ${s.label}
+    <div class="popup-label" style="color:${dotColor};background:${labelBg};border:1px solid ${labelBorder}">
+      ${isSuppressed ? s.label + ' \u00b7 suppressed demand' : s.label}
     </div>
   `, { maxWidth: 240, minWidth: 200 });
 
@@ -531,7 +537,9 @@ function applyStationFilter(filter) {
     const s = m._stationData;
     let show = filter === 'all'
       || (filter === 'underserved' && s.ratio !== null && s.ratio > 1.3)
-      || (filter === 'top20' && TOP20.has(s.name));
+      || (filter === 'top20' && TOP20.has(s.name))
+      || (filter === 'suppressed' && s.ratio !== null && s.ratio < 0.7
+          && s.min_trips !== null && s.min_trips <= 14);
     if (show) m.addTo(stationLayer);
   });
 }
@@ -576,6 +584,16 @@ def main():
     rail, rail_trips, stop_times, stops, shapes = load_gtfs()
     station_lookup, station_records, top20 = load_stations()
     segments = build_segments(rail, rail_trips, stop_times, stops, shapes, station_lookup)
+
+    # Build station → min weekly trips from segment data
+    station_min_trips: dict[str, int] = {}
+    for seg in segments:
+        for name in (seg["from"], seg["to"]):
+            trips = seg["trips"]
+            if name not in station_min_trips or trips < station_min_trips[name]:
+                station_min_trips[name] = trips
+    for rec in station_records:
+        rec["min_trips"] = station_min_trips.get(rec["name"])
 
     # Serialise to JSON
     segments_json = json.dumps(segments, separators=(",", ":"))
