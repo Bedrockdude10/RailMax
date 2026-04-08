@@ -24,15 +24,15 @@ import numpy as np
 import pandas as pd
 from sklearn.metrics.pairwise import haversine_distances
 
+from config import COLLEGE_RADII_KM
+from utils import EARTH_RADIUS_KM
+
 ROOT = Path(__file__).resolve().parent.parent
 RAW = ROOT / "data" / "raw"
 PROCESSED = ROOT / "data" / "processed"
 
-COLLEGE_FEATURES = [
-    "college_enrollment_15km",
-]
-RADII_KM = [15]
-EARTH_R_KM = 6371.0
+COLLEGE_FEATURES = [f"college_enrollment_{r}km" for r in COLLEGE_RADII_KM]
+RADII_KM = COLLEGE_RADII_KM
 
 
 # ── Load IPEDS ────────────────────────────────────────────────────────────────
@@ -75,7 +75,7 @@ def compute_enrollment_within_radii(stations: pd.DataFrame,
     c_rad = np.radians(colleges[["LATITUDE", "LONGITUD"]].values)  # (N_colleges, 2)
 
     # Distance matrix in km: shape (N_stations, N_colleges)
-    dist_km = haversine_distances(s_rad, c_rad) * EARTH_R_KM
+    dist_km = haversine_distances(s_rad, c_rad) * EARTH_RADIUS_KM
 
     enrollment = colleges["EFTOTLT"].values  # (N_colleges,)
 

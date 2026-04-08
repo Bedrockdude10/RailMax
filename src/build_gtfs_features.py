@@ -1,7 +1,7 @@
 """
 build_gtfs_features.py
 
-Compute 11 GTFS-derived features per Amtrak station and join them to
+Compute GTFS-derived features per Amtrak station and join them to
 data/processed/stations.csv, writing the result back in-place.
 
 Filters applied:
@@ -16,13 +16,15 @@ Run directly:
     python src/build_gtfs_features.py
 """
 
-import math
 import sys
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 from rapidfuzz import process as fuzz_process, fuzz
+
+from config import GTFS_COORD_MATCH_KM, GTFS_FUZZY_SCORE, LONG_DISTANCE_ROUTE_KM
+from utils import haversine_km
 
 ROOT = Path(__file__).resolve().parent.parent
 GTFS = ROOT / "data" / "raw" / "GTFS"
@@ -35,16 +37,6 @@ def time_to_sec(t: str) -> float:
     """Convert 'HH:MM:SS' (may exceed 24h) to total seconds."""
     h, m, s = t.split(":")
     return int(h) * 3600 + int(m) * 60 + int(s)
-
-
-def haversine_km(lat1, lon1, lat2, lon2) -> float:
-    """Great-circle distance in km between two lat/lon pairs."""
-    R = 6371.0
-    phi1, phi2 = math.radians(lat1), math.radians(lat2)
-    dphi = math.radians(lat2 - lat1)
-    dlambda = math.radians(lon2 - lon1)
-    a = math.sin(dphi / 2) ** 2 + math.cos(phi1) * math.cos(phi2) * math.sin(dlambda / 2) ** 2
-    return 2 * R * math.asin(math.sqrt(a))
 
 
 # ── Load & filter GTFS ────────────────────────────────────────────────────────
@@ -112,7 +104,6 @@ def compute_per_stop_features(rail_routes, trips_filt, st_filt, stops):
     st["is_last"]  = (st["stop_sequence"] == st["max_seq"]).astype(int)
 
     # ── Route lengths: Haversine(first stop → last stop) ──
-    # Get first and last stop coordinates for each trip
     first_stops = (
         st[st["is_first"] == 1][["trip_id", "stop_id"]]
         .merge(stops[["stop_id", "stop_lat", "stop_lon"]], on="stop_id")
@@ -124,8 +115,9 @@ def compute_per_stop_features(rail_routes, trips_filt, st_filt, stops):
         .rename(columns={"stop_lat": "lat2", "stop_lon": "lon2"})
     )
     trip_lengths = first_stops.merge(last_stops, on="trip_id", suffixes=("_f", "_l"))
-    trip_lengths["route_len_km"] = trip_lengths.apply(
-        lambda r: haversine_km(r["lat1"], r["lon1"], r["lat2"], r["lon2"]), axis=1
+    trip_lengths["route_len_km"] = haversine_km(
+        trip_lengths["lat1"].values, trip_lengths["lon1"].values,
+        trip_lengths["lat2"].values, trip_lengths["lon2"].values,
     )
 
     # Map trip → route, then route → max trip length (representative length)
@@ -133,7 +125,7 @@ def compute_per_stop_features(rail_routes, trips_filt, st_filt, stops):
     trip_lengths = trip_lengths.merge(trip_route, on="trip_id")
     route_len = (
         trip_lengths.groupby("route_id")["route_len_km"]
-        .max()  # use max trip length as route length
+        .max()
         .reset_index()
     )
 
@@ -144,55 +136,42 @@ def compute_per_stop_features(rail_routes, trips_filt, st_filt, stops):
     agg = {}
 
     # weekly_departures: sum of days_per_week across trip patterns per stop
-    weekly_dep = st.groupby("stop_id")["days_per_week"].sum().rename("weekly_departures")
-    agg["weekly_departures"] = weekly_dep
+    agg["weekly_departures"] = st.groupby("stop_id")["days_per_week"].sum().rename("weekly_departures")
 
-    # num_routes_served
-    num_routes = st.groupby("stop_id")["route_id"].nunique().rename("num_routes_served")
-    agg["num_routes_served"] = num_routes
+    # num_routes_served: count of distinct routes calling at this stop
+    agg["num_routes_served"] = st.groupby("stop_id")["route_id"].nunique().rename("num_routes_served")
 
     # is_terminal
-    is_term = st.groupby("stop_id").apply(
+    agg["is_terminal"] = st.groupby("stop_id").apply(
         lambda g: int((g["is_first"].any()) or (g["is_last"].any())),
         include_groups=False,
     ).rename("is_terminal")
-    agg["is_terminal"] = is_term
 
     # avg_dwell_time_sec
-    avg_dwell = st.groupby("stop_id")["dwell_sec"].mean().rename("avg_dwell_time_sec")
-    agg["avg_dwell_time_sec"] = avg_dwell
+    agg["avg_dwell_time_sec"] = st.groupby("stop_id")["dwell_sec"].mean().rename("avg_dwell_time_sec")
 
     # service_span_hours: (max dep - min dep) across all service patterns
-    span = st.groupby("stop_id").apply(
+    agg["service_span_hours"] = st.groupby("stop_id").apply(
         lambda g: (g["dep_sec"].max() - g["dep_sec"].min()) / 3600.0,
         include_groups=False,
     ).rename("service_span_hours")
-    agg["service_span_hours"] = span
 
     # avg_stop_sequence_pct
-    avg_seq_pct = st.groupby("stop_id")["seq_pct"].mean().rename("avg_stop_sequence_pct")
-    agg["avg_stop_sequence_pct"] = avg_seq_pct
+    agg["avg_stop_sequence_pct"] = st.groupby("stop_id")["seq_pct"].mean().rename("avg_stop_sequence_pct")
 
     # num_directions
-    num_dir = st.groupby("stop_id")["direction_id"].nunique().rename("num_directions")
-    agg["num_directions"] = num_dir
+    agg["num_directions"] = st.groupby("stop_id")["direction_id"].nunique().rename("num_directions")
 
     # avg_route_length_km and max_route_length_km
-    avg_rlen = st.groupby("stop_id")["route_len_km"].mean().rename("avg_route_length_km")
-    max_rlen = st.groupby("stop_id")["route_len_km"].max().rename("max_route_length_km")
-    agg["avg_route_length_km"] = avg_rlen
-    agg["max_route_length_km"] = max_rlen
+    agg["avg_route_length_km"] = st.groupby("stop_id")["route_len_km"].mean().rename("avg_route_length_km")
+    agg["max_route_length_km"] = st.groupby("stop_id")["route_len_km"].max().rename("max_route_length_km")
 
-    # weekly_trips: same as weekly_departures (kept as separate column for clarity)
-    agg["weekly_trips"] = weekly_dep.rename("weekly_trips")
-
-    # pct_long_distance: fraction of routes > 500km serving this stop
+    # pct_long_distance: fraction of routes > LONG_DISTANCE_ROUTE_KM serving this stop
     def pct_long(g):
         route_lens = g.groupby("route_id")["route_len_km"].max()
-        return (route_lens > 500).mean()
+        return (route_lens > LONG_DISTANCE_ROUTE_KM).mean()
 
-    pct_ld = st.groupby("stop_id").apply(pct_long, include_groups=False).rename("pct_long_distance")
-    agg["pct_long_distance"] = pct_ld
+    agg["pct_long_distance"] = st.groupby("stop_id").apply(pct_long, include_groups=False).rename("pct_long_distance")
 
     # Combine
     feat_df = pd.concat(agg.values(), axis=1).reset_index()
@@ -210,27 +189,30 @@ def compute_per_stop_features(rail_routes, trips_filt, st_filt, stops):
 
 # ── Match GTFS stops → stations.csv ───────────────────────────────────────────
 
-COORD_MATCH_KM = 2.0  # max distance for coordinate fallback
-
-
 def match_stops_to_stations(feat_df: pd.DataFrame, stations: pd.DataFrame) -> pd.DataFrame:
     """
     For each GTFS stop, find the best matching station in stations.csv.
     Strategy:
       1. Exact stop_id match on stations 'code' column.
-      2. Fuzzy name match (rapidfuzz, score >= 85).
-      3. Nearest coordinate within COORD_MATCH_KM.
+      2. Fuzzy name match (rapidfuzz, score >= GTFS_FUZZY_SCORE).
+      3. Nearest coordinate within GTFS_COORD_MATCH_KM (vectorised).
     Returns feat_df with a new 'matched_code' column.
     """
     print("\nMatching GTFS stops to stations.csv …")
 
-    station_codes  = stations["code"].tolist()
+    station_codes  = stations["code"].values
     station_names  = stations["station_name"].tolist()
-    station_lats   = stations["lat"].tolist()
-    station_lons   = stations["lon"].tolist()
+    station_lats   = stations["lat"].values
+    station_lons   = stations["lon"].values
 
     matched_codes = []
     match_methods = []
+
+    # Pre-filter stations with valid coordinates for coord fallback
+    valid_station_mask = ~(np.isnan(station_lats) | np.isnan(station_lons))
+    valid_station_codes = station_codes[valid_station_mask]
+    valid_s_lats = station_lats[valid_station_mask]
+    valid_s_lons = station_lons[valid_station_mask]
 
     for _, row in feat_df.iterrows():
         sid   = row["stop_id"]
@@ -248,39 +230,29 @@ def match_stops_to_stations(feat_df: pd.DataFrame, stations: pd.DataFrame) -> pd
 
         # 2. Fuzzy name match
         if code is None:
-            # Strip " Amtrak Station" etc. for cleaner match
             clean_name = (sname
                           .replace(" Amtrak Station", "")
                           .replace(" Station", "")
                           .replace(" Train Station", "")
                           .strip())
-            # Compare against station_name column (e.g. "Aberdeen, MD")
-            # Also try the City part only
             result = fuzz_process.extractOne(
                 clean_name,
                 station_names,
                 scorer=fuzz.token_set_ratio,
-                score_cutoff=80,
+                score_cutoff=GTFS_FUZZY_SCORE,
             )
             if result is not None:
                 matched_name, score, idx = result
                 code = station_codes[idx]
                 method = f"fuzzy_name(score={score:.0f})"
 
-        # 3. Coordinate proximity
-        if code is None and not (math.isnan(slat) or math.isnan(slon)):
-            min_dist = float("inf")
-            best_idx = -1
-            for i, (lat2, lon2) in enumerate(zip(station_lats, station_lons)):
-                if math.isnan(lat2) or math.isnan(lon2):
-                    continue
-                d = haversine_km(slat, slon, lat2, lon2)
-                if d < min_dist:
-                    min_dist = d
-                    best_idx = i
-            if min_dist <= COORD_MATCH_KM and best_idx >= 0:
-                code = station_codes[best_idx]
-                method = f"coord(dist={min_dist:.2f}km)"
+        # 3. Coordinate proximity (vectorised)
+        if code is None and not (np.isnan(slat) or np.isnan(slon)):
+            dists = haversine_km(slat, slon, valid_s_lats, valid_s_lons)
+            min_idx = np.argmin(dists)
+            if dists[min_idx] <= GTFS_COORD_MATCH_KM:
+                code = valid_station_codes[min_idx]
+                method = f"coord(dist={dists[min_idx]:.2f}km)"
 
         matched_codes.append(code)
         match_methods.append(method or "unmatched")
@@ -307,7 +279,6 @@ GTFS_FEATURE_COLS = [
     "num_directions",
     "avg_route_length_km",
     "max_route_length_km",
-    "weekly_trips",
     "pct_long_distance",
 ]
 
@@ -319,13 +290,13 @@ def join_to_stations(feat_df: pd.DataFrame, stations: pd.DataFrame) -> pd.DataFr
     """
     matched = feat_df[feat_df["matched_code"].notna()].copy()
 
-    # If multiple GTFS stops map to the same station code, aggregate
     agg_rules = {col: "mean" for col in GTFS_FEATURE_COLS}
-    # For integer/binary columns use max instead of mean where it makes sense
     agg_rules["is_terminal"] = "max"
     agg_rules["num_directions"] = "max"
     agg_rules["weekly_departures"] = "sum"
-    agg_rules["weekly_trips"] = "sum"
+    # num_routes_served: when multiple GTFS stops map to the same station,
+    # sum the per-stop unique-route counts as an upper-bound approximation.
+    # (True unique-route count across stops would need a second-pass groupby.)
     agg_rules["num_routes_served"] = "sum"
 
     station_feats = matched.groupby("matched_code").agg(agg_rules).reset_index()
@@ -368,13 +339,11 @@ def main():
     print(f"\nUpdated stations.csv written to {out_path}")
     print(f"Columns now: {merged.columns.tolist()}")
 
-    # Summary stats on GTFS features
     print("\nGTFS feature summary (stations with data):")
     print(merged[GTFS_FEATURE_COLS].describe().round(2).to_string())
 
 
 if __name__ == "__main__":
-    # Check for rapidfuzz
     try:
         import rapidfuzz  # noqa: F401
     except ImportError:

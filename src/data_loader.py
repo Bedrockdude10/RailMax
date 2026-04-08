@@ -60,7 +60,6 @@ GTFS_FEATURES = [
     "num_directions",
     "avg_route_length_km",
     "max_route_length_km",
-    "weekly_trips",
     "pct_long_distance",
 ]
 

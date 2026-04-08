@@ -28,42 +28,14 @@ import numpy as np
 import pandas as pd
 from rapidfuzz import process, fuzz
 
+from config import STATE_ABBR, PARSE_COORD_MATCH_KM, PARSE_FUZZY_SCORE
+from utils import haversine_km
+
 # ── Paths ──────────────────────────────────────────────────────────────────────
 ROOT = Path(__file__).resolve().parent.parent
 RAW = ROOT / "data" / "raw"
 PROCESSED = ROOT / "data" / "processed"
 PROCESSED.mkdir(parents=True, exist_ok=True)
-
-# State name → abbreviation lookup (for normalising map_data states)
-STATE_ABBR = {
-    "Alabama": "AL", "Alaska": "AK", "Arizona": "AZ", "Arkansas": "AR",
-    "California": "CA", "Colorado": "CO", "Connecticut": "CT", "Delaware": "DE",
-    "Florida": "FL", "Georgia": "GA", "Hawaii": "HI", "Idaho": "ID",
-    "Illinois": "IL", "Indiana": "IN", "Iowa": "IA", "Kansas": "KS",
-    "Kentucky": "KY", "Louisiana": "LA", "Maine": "ME", "Maryland": "MD",
-    "Massachusetts": "MA", "Michigan": "MI", "Minnesota": "MN",
-    "Mississippi": "MS", "Missouri": "MO", "Montana": "MT", "Nebraska": "NE",
-    "Nevada": "NV", "New Hampshire": "NH", "New Jersey": "NJ",
-    "New Mexico": "NM", "New York": "NY", "North Carolina": "NC",
-    "North Dakota": "ND", "Ohio": "OH", "Oklahoma": "OK", "Oregon": "OR",
-    "Pennsylvania": "PA", "Rhode Island": "RI", "South Carolina": "SC",
-    "South Dakota": "SD", "Tennessee": "TN", "Texas": "TX", "Utah": "UT",
-    "Vermont": "VT", "Virginia": "VA", "Washington": "WA",
-    "West Virginia": "WV", "Wisconsin": "WI", "Wyoming": "WY",
-    "District of Columbia": "DC",
-}
-
-
-# ── Helpers ────────────────────────────────────────────────────────────────────
-
-def haversine_km(lat1, lon1, lat2, lon2):
-    """Vectorised Haversine distance (km) between arrays of lat/lon points."""
-    R = 6371.0
-    lat1, lon1, lat2, lon2 = map(np.radians, [lat1, lon1, lat2, lon2])
-    dlat = lat2 - lat1
-    dlon = lon2 - lon1
-    a = np.sin(dlat / 2) ** 2 + np.cos(lat1) * np.cos(lat2) * np.sin(dlon / 2) ** 2
-    return R * 2 * np.arcsin(np.sqrt(a))
 
 
 def normalise_city(name: str) -> str:
@@ -221,7 +193,7 @@ def assign_map_to_codes(map_df: pd.DataFrame,
                 ntad_lats[state_mask], ntad_lons[state_mask],
             )
             min_pos = np.argmin(dists)
-            if dists[min_pos] <= 30.0:
+            if dists[min_pos] <= PARSE_COORD_MATCH_KM:
                 state_indices = np.where(state_mask)[0]
                 code = ntad_codes[state_indices[min_pos]]
                 method = f"coord({dists[min_pos]:.2f}km)"
@@ -232,7 +204,7 @@ def assign_map_to_codes(map_df: pd.DataFrame,
             match = process.extractOne(
                 row["city_norm"], state_cities,
                 scorer=fuzz.token_sort_ratio,
-                score_cutoff=85,
+                score_cutoff=PARSE_FUZZY_SCORE,
             )
             if match:
                 best_city, score, idx = match

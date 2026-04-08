@@ -15,72 +15,52 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from scipy.spatial import cKDTree
+
+from config import (
+    METRO_POP_RADIUS_KM,
+    METRO_POP_FALLBACK_KM,
+    MAJOR_CITY_POP_THRESHOLD,
+    NEARBY_STATIONS_RADIUS_KM,
+    NEC_LAT_MIN,
+    NEC_LAT_MAX,
+    NEC_LON_MIN,
+)
+from utils import haversine_km
 
 # ── Paths ──────────────────────────────────────────────────────────────────────
 ROOT = Path(__file__).resolve().parent.parent
 PROCESSED = ROOT / "data" / "processed"
 CITIES_CSV = ROOT / "data" / "us_cities_pop.csv"
 
-# NEC bounding box (approximate): Boston → Washington
-# lat: 38.89°N (Union Station DC) to 42.36°N (South Station Boston)
-# lon: east of -77.10°W
-NEC_LAT_MIN = 38.89
-NEC_LAT_MAX = 42.40
-NEC_LON_MIN = -77.10  # east of this (i.e., lon ≥ -77.10)
-
-EARTH_RADIUS_KM = 6371.0
-
-
-# ── Helpers ────────────────────────────────────────────────────────────────────
-
-def deg_to_rad(arr):
-    return np.radians(arr)
-
-
-def build_kdtree_rad(lats, lons):
-    """Build a cKDTree using (lat_rad, lon_rad) as 2-D keys.
-
-    Note: cKDTree distances in radian-space approximate arc distances only for
-    small separations. We use it as a fast pre-filter and recompute exact
-    Haversine for the returned candidates.
-    """
-    coords = np.column_stack([deg_to_rad(lats), deg_to_rad(lons)])
-    return cKDTree(coords)
-
-
-def haversine_km_vec(lat1, lon1, lat2_arr, lon2_arr):
-    """Haversine from one point to an array of points (km)."""
-    R = EARTH_RADIUS_KM
-    lat1_r, lon1_r = np.radians(lat1), np.radians(lon1)
-    lat2_r = np.radians(lat2_arr)
-    lon2_r = np.radians(lon2_arr)
-    dlat = lat2_r - lat1_r
-    dlon = lon2_r - lon1_r
-    a = np.sin(dlat / 2) ** 2 + np.cos(lat1_r) * np.cos(lat2_r) * np.sin(dlon / 2) ** 2
-    return R * 2 * np.arcsin(np.sqrt(np.clip(a, 0, 1)))
-
 
 # ── Feature functions ──────────────────────────────────────────────────────────
 
 def add_metro_pop(stations: pd.DataFrame, cities: pd.DataFrame) -> pd.DataFrame:
     """
-    For each station, find the nearest city within 50 km and assign its
-    population as `metro_pop`.  Falls back to nearest city within 100 km,
+    For each station, find the nearest city within METRO_POP_RADIUS_KM and
+    assign its population as `metro_pop`.  Falls back to METRO_POP_FALLBACK_KM,
     then NaN.
+
+    Fully vectorised: builds an (N_stations × N_cities) distance matrix once.
     """
     valid = stations[["lat", "lon"]].notna().all(axis=1)
-    city_lats = cities["lat"].values
-    city_lons = cities["lon"].values
-    city_pops = cities["pop"].values
+    s_lats = stations.loc[valid, "lat"].values[:, None]   # (N_s, 1)
+    s_lons = stations.loc[valid, "lon"].values[:, None]
+    c_lats = cities["lat"].values[None, :]                # (1, N_c)
+    c_lons = cities["lon"].values[None, :]
+    city_pops = cities["pop"].values                      # (N_c,)
+
+    # (N_s, N_c) distance matrix
+    dist_km = haversine_km(s_lats, s_lons, c_lats, c_lons)
 
     metro_pop = np.full(len(stations), np.nan)
+    valid_positions = np.where(valid)[0]
 
-    for i, row in stations[valid].iterrows():
-        dists = haversine_km_vec(row["lat"], row["lon"], city_lats, city_lons)
-        close = np.where(dists <= 50.0)[0]
+    for k, i in enumerate(valid_positions):
+        dists = dist_km[k]
+        close = np.where(dists <= METRO_POP_RADIUS_KM)[0]
         if len(close) == 0:
-            close = np.where(dists <= 100.0)[0]
+            close = np.where(dists <= METRO_POP_FALLBACK_KM)[0]
         if len(close) > 0:
             best = close[np.argmax(city_pops[close])]
             metro_pop[i] = city_pops[best]
@@ -92,49 +72,59 @@ def add_metro_pop(stations: pd.DataFrame, cities: pd.DataFrame) -> pd.DataFrame:
 
 def add_distance_to_major_city(stations: pd.DataFrame,
                                 cities: pd.DataFrame) -> pd.DataFrame:
-    """Haversine distance (km) to nearest city with population > 500,000."""
-    major = cities[cities["pop"] > 500_000].copy()
+    """
+    Haversine distance (km) to nearest city with population > MAJOR_CITY_POP_THRESHOLD.
+
+    Fully vectorised: builds an (N_stations × N_major_cities) distance matrix once.
+    """
+    major = cities[cities["pop"] > MAJOR_CITY_POP_THRESHOLD]
+    stations = stations.copy()
     if major.empty:
-        stations = stations.copy()
         stations["distance_to_nearest_major_city_km"] = np.nan
         return stations
 
-    major_lats = major["lat"].values
-    major_lons = major["lon"].values
-
     valid = stations[["lat", "lon"]].notna().all(axis=1)
+    s_lats = stations.loc[valid, "lat"].values[:, None]   # (N_s, 1)
+    s_lons = stations.loc[valid, "lon"].values[:, None]
+    m_lats = major["lat"].values[None, :]                 # (1, N_major)
+    m_lons = major["lon"].values[None, :]
+
+    dist_km = haversine_km(s_lats, s_lons, m_lats, m_lons)  # (N_s, N_major)
+
     dists_col = np.full(len(stations), np.nan)
+    valid_positions = np.where(valid)[0]
+    for k, i in enumerate(valid_positions):
+        dists_col[i] = dist_km[k].min()
 
-    for i, row in stations[valid].iterrows():
-        dists = haversine_km_vec(row["lat"], row["lon"], major_lats, major_lons)
-        dists_col[i] = dists.min()
-
-    stations = stations.copy()
     stations["distance_to_nearest_major_city_km"] = dists_col
     return stations
 
 
 def add_num_nearby_stations(stations: pd.DataFrame,
-                             radius_km: float = 80.0) -> pd.DataFrame:
-    """Count of OTHER Amtrak stations within radius_km of each station."""
+                             radius_km: float = NEARBY_STATIONS_RADIUS_KM) -> pd.DataFrame:
+    """
+    Count of OTHER Amtrak stations within radius_km of each station.
+
+    Fully vectorised: builds an (N_valid × N_valid) pairwise distance matrix once.
+    """
     valid_mask = stations[["lat", "lon"]].notna().all(axis=1)
-    valid_idx = stations.index[valid_mask].tolist()
+    valid_positions = np.where(valid_mask)[0]
 
     lats = stations.loc[valid_mask, "lat"].values
     lons = stations.loc[valid_mask, "lon"].values
 
-    counts = np.zeros(len(valid_idx), dtype=int)
-    for k, i in enumerate(valid_idx):
-        dists = haversine_km_vec(lats[k], lons[k], lats, lons)
-        # exclude self (dist == 0)
-        counts[k] = int((dists <= radius_km).sum()) - 1
+    # (N_valid, N_valid) pairwise distance matrix
+    dist_km = haversine_km(lats[:, None], lons[:, None], lats[None, :], lons[None, :])
 
-    num_nearby = pd.Series(np.nan, index=stations.index)
-    for k, i in enumerate(valid_idx):
-        num_nearby[i] = counts[k]
+    # Count stations within radius, excluding self (diagonal = 0)
+    counts = (dist_km <= radius_km).sum(axis=1) - 1
+
+    num_nearby = pd.array([pd.NA] * len(stations), dtype="Int64")
+    for k, i in enumerate(valid_positions):
+        num_nearby[i] = int(counts[k])
 
     stations = stations.copy()
-    stations["num_nearby_stations"] = num_nearby.astype("Int64")
+    stations["num_nearby_stations"] = num_nearby
     return stations
 
 
@@ -189,7 +179,6 @@ def main():
     stations.to_csv(in_path, index=False)
     print(f"\nUpdated {in_path} with engineered features")
 
-    # Summary
     feature_cols = ["metro_pop", "distance_to_nearest_major_city_km",
                     "num_nearby_stations", "is_northeast_corridor"]
     print(stations[feature_cols].describe().to_string())
