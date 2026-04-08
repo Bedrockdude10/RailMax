@@ -71,6 +71,7 @@ ACS_FEATURES = [
     "pct_rail_commute",
     "pct_walked",
     "pct_work_from_home",
+    "median_household_income",
 ]
 
 ALL_FEATURES = BINARY_IPCD_FEATURES + NUMERIC_V0_FEATURES + CATEGORICAL_FEATURES + GTFS_FEATURES + ACS_FEATURES

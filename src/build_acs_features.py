@@ -1,16 +1,19 @@
 """
 build_acs_features.py
 
-Parse ACS 5-Year B08301 county-level commute data, reverse-geocode each
-station's lat/lon to a county FIPS code via the FCC Census Block API,
-join commute percentages to data/processed/stations.csv, and write in-place.
+Parse ACS 5-Year county-level data, reverse-geocode each station's lat/lon to
+a county FIPS code via the FCC Census Block API, join features to
+data/processed/stations.csv, and write in-place.
 
 Features added per station (from the station's county):
-  pct_drove_alone       = B08301_003E / B08301_001E
-  pct_public_transit    = B08301_010E / B08301_001E
-  pct_rail_commute      = B08301_013E / B08301_001E
-  pct_walked            = B08301_019E / B08301_001E
-  pct_work_from_home    = B08301_021E / B08301_001E
+  B08301 — commute mode:
+    pct_drove_alone       = B08301_003E / B08301_001E
+    pct_public_transit    = B08301_010E / B08301_001E
+    pct_rail_commute      = B08301_013E / B08301_001E
+    pct_walked            = B08301_019E / B08301_001E
+    pct_work_from_home    = B08301_021E / B08301_001E
+  B19013 — household income:
+    median_household_income = B19013_001E  (dollars, 2023 inflation-adjusted)
 
 FCC API: https://geo.fcc.gov/api/census/area?lat={lat}&lon={lon}&format=json
 Results cached in data/processed/station_county_fips.csv so re-runs skip API.
@@ -34,7 +37,8 @@ RAW = ROOT / "data" / "raw"
 PROCESSED = ROOT / "data" / "processed"
 FIPS_CACHE = PROCESSED / "station_county_fips.csv"
 
-ACS_FILE = RAW / "ACSDT5Y2023.B08301-Data.csv"
+B08301_FILE = RAW / "ACSDT5Y2023.B08301-Data.csv"
+B19013_FILE = RAW / "ACSDT5Y2023.B19013-Data.csv"
 
 ACS_FEATURES = [
     "pct_drove_alone",
@@ -42,10 +46,11 @@ ACS_FEATURES = [
     "pct_rail_commute",
     "pct_walked",
     "pct_work_from_home",
+    "median_household_income",
 ]
 
-# ACS column → numerator for each feature (denominator is always B08301_001E)
-ACS_NUMERATORS = {
+# B08301 commute mode: feature name → numerator column (denominator = B08301_001E)
+B08301_NUMERATORS = {
     "pct_drove_alone":    "B08301_003E",
     "pct_public_transit": "B08301_010E",
     "pct_rail_commute":   "B08301_013E",
@@ -56,34 +61,45 @@ ACS_NUMERATORS = {
 
 # ── Parse ACS ─────────────────────────────────────────────────────────────────
 
-def load_acs() -> pd.DataFrame:
+def _parse_acs_file(path: Path, cols: list[str]) -> pd.DataFrame:
     """
-    Parse ACS B08301 file.
-    Row 0: machine-readable column names (actual header).
-    Row 1: human-readable labels — skip.
-    Rows 2+: county data.
-    Extract county_fips from GEO_ID (last 5 chars of "0500000USxxxxx").
-    Coerce estimate columns to numeric; non-numeric values (-, N) → NaN.
+    Generic ACS file parser.
+    Row 0: machine-readable column names. Row 1: human labels (skipped).
+    Coerces requested columns to numeric; non-numeric (-, N) → NaN.
+    Returns df with county_fips + requested cols.
     """
-    print(f"Parsing {ACS_FILE.name} …")
-    df = pd.read_csv(ACS_FILE, encoding="utf-8-sig", dtype=str, skiprows=[1])
-
-    # GEO_ID format: "0500000US42101" → county_fips "42101"
+    df = pd.read_csv(path, encoding="utf-8-sig", dtype=str, skiprows=[1])
     df["county_fips"] = df["GEO_ID"].str[-5:]
-
-    # Coerce estimate columns to numeric
-    need_cols = ["B08301_001E"] + list(ACS_NUMERATORS.values())
-    for col in need_cols:
+    for col in cols:
         df[col] = pd.to_numeric(df[col], errors="coerce")
+    return df
 
-    # Compute percentages
-    total = df["B08301_001E"]
-    for feat, num_col in ACS_NUMERATORS.items():
-        df[feat] = df[num_col] / total  # NaN propagates if total=0 or NaN
 
-    out = df[["county_fips", "NAME"] + ACS_FEATURES].copy()
-    print(f"  {len(out)} counties loaded, {out[ACS_FEATURES].notna().all(axis=1).sum()} with complete commute data")
-    return out
+def load_acs() -> pd.DataFrame:
+    """Load and merge B08301 (commute mode) and B19013 (household income)."""
+    # ── B08301 commute mode ──
+    print(f"Parsing {B08301_FILE.name} …")
+    b08 = _parse_acs_file(
+        B08301_FILE,
+        ["B08301_001E"] + list(B08301_NUMERATORS.values()),
+    )
+    total = b08["B08301_001E"]
+    for feat, num_col in B08301_NUMERATORS.items():
+        b08[feat] = b08[num_col] / total
+    commute_features = list(B08301_NUMERATORS.keys())
+    b08 = b08[["county_fips"] + commute_features]
+    print(f"  {len(b08)} counties, {b08[commute_features].notna().all(axis=1).sum()} complete")
+
+    # ── B19013 median household income ──
+    print(f"Parsing {B19013_FILE.name} …")
+    b19 = _parse_acs_file(B19013_FILE, ["B19013_001E"])
+    b19 = b19[["county_fips", "B19013_001E"]].rename(
+        columns={"B19013_001E": "median_household_income"}
+    )
+    print(f"  {len(b19)} counties, {b19['median_household_income'].notna().sum()} with income data")
+
+    acs = b08.merge(b19, on="county_fips", how="outer")
+    return acs
 
 
 # ── FCC reverse-geocode ───────────────────────────────────────────────────────
@@ -187,7 +203,7 @@ def join_acs_to_stations(stations: pd.DataFrame,
     print(f"  ACS features joined to {joined}/{len(merged)} stations")
 
     # Print coverage gaps
-    missing = merged[merged["county_fips"].isna() | merged["pct_drove_alone"].isna()]
+    missing = merged[merged["county_fips"].isna() | merged[ACS_FEATURES[0]].isna()]
     if len(missing) > 0:
         print(f"  {len(missing)} stations with no ACS match (NaN — EBM handles missing):")
         if len(missing) <= 10:
@@ -215,8 +231,7 @@ def main():
 
     # Sample check
     print("\nSample (stations with ACS data):")
-    sample_cols = ["code", "station_name", "pct_drove_alone", "pct_public_transit",
-                   "pct_rail_commute", "pct_walked", "pct_work_from_home"]
+    sample_cols = ["code", "station_name"] + ACS_FEATURES
     sample = merged[merged["pct_drove_alone"].notna()].head(8)[sample_cols]
     print(sample.round(4).to_string(index=False))
 
