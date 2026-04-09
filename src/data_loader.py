@@ -6,7 +6,7 @@ Returns a clean DataFrame ready for EBM training.
 
 Handles:
 - NaN filling for v0 features (IPCD features missing for some stations)
-- NaN placeholders for v1 features not yet present (daily_departures, etc.)
+- NaN placeholders for v1 features not yet present in older datasets
 - Type coercion
 """
 
@@ -34,10 +34,7 @@ BINARY_IPCD_FEATURES = [
 
 # Numeric features present in v0
 NUMERIC_V0_FEATURES = [
-    "lat",
-    "lon",
     "modes_served",
-    "is_metro_area",
     "metro_pop",
     "distance_to_nearest_major_city_km",
     "num_nearby_stations",
@@ -78,7 +75,12 @@ COLLEGE_FEATURES = [
     "college_enrollment_15km",
 ]
 
-ALL_FEATURES = BINARY_IPCD_FEATURES + NUMERIC_V0_FEATURES + CATEGORICAL_FEATURES + GTFS_FEATURES + ACS_FEATURES + COLLEGE_FEATURES
+# Tourism features (computed by src/build_tourism_features.py)
+TOURISM_FEATURES = [
+    "overseas_visitors_thousands",
+]
+
+ALL_FEATURES = BINARY_IPCD_FEATURES + NUMERIC_V0_FEATURES + CATEGORICAL_FEATURES + GTFS_FEATURES + ACS_FEATURES + COLLEGE_FEATURES + TOURISM_FEATURES
 
 TARGET = "annual_ridership"
 
@@ -117,12 +119,6 @@ def load_stations(path: Optional[Path] = None) -> pd.DataFrame:
         df["modes_served"] = df["modes_served"].fillna(0).astype(float)
     else:
         df["modes_served"] = 0.0
-
-    # ── is_metro_area ──
-    if "is_metro_area" in df.columns:
-        df["is_metro_area"] = df["is_metro_area"].fillna(0).astype(int)
-    else:
-        df["is_metro_area"] = 0
 
     # ── Numeric features: leave NaN (EBM handles missing) ──
     for col in ["metro_pop", "distance_to_nearest_major_city_km",
@@ -169,6 +165,11 @@ def load_stations(path: Optional[Path] = None) -> pd.DataFrame:
     for col in COLLEGE_FEATURES:
         if col not in df.columns:
             df[col] = 0.0
+
+    # ── Tourism features: NaN for stations outside top-50 tourist MSAs ──
+    for col in TOURISM_FEATURES:
+        if col not in df.columns:
+            df[col] = np.nan
 
     return df
 

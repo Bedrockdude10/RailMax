@@ -148,6 +148,15 @@ def load_ntad_stations() -> pd.DataFrame:
 
 # ── 3. Assign each map_data row to one NTAD code ─────────────────────────────
 
+# Manual overrides: map_data Station name → forced NTAD code.
+# Used when the automatic coord/fuzzy match picks the wrong station.
+# "Newark, New Jersey" coord-matches to EWR (airport) because it's slightly
+# closer, but the ridership belongs to NWK (Penn Station).
+MAP_DATA_CODE_OVERRIDES = {
+    "Newark, New Jersey": "NWK",
+}
+
+
 def assign_map_to_codes(map_df: pd.DataFrame,
                          ntad_df: pd.DataFrame) -> pd.DataFrame:
     """
@@ -178,6 +187,13 @@ def assign_map_to_codes(map_df: pd.DataFrame,
         state = row["state_abbr"]
         code = None
         method = None
+
+        # ── Step 0: manual override ──
+        if row["Station"] in MAP_DATA_CODE_OVERRIDES:
+            code = MAP_DATA_CODE_OVERRIDES[row["Station"]]
+            matched_codes.append(code)
+            match_methods.append("override")
+            continue
 
         # State-restricted NTAD candidates
         state_mask = ntad_states == state

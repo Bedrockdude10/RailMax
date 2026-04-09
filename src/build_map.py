@@ -94,21 +94,14 @@ def load_stations():
     oof = pd.read_csv(METRICS / "oof_predictions_v1.csv")
     stations = pd.read_csv(PROCESSED / "stations.csv")
 
-    # Deduplicate OOF (aggregate across folds)
-    oof = (
-        oof.groupby("station", as_index=False)
-           .agg(actual_ridership=("actual_ridership", "first"),
-                oof_predicted_ridership=("oof_predicted_ridership", "mean"))
-    )
     oof["demand_ratio"] = (
         oof["actual_ridership"]
         / oof["oof_predicted_ridership"].replace(0, np.nan)
     ).round(3)
 
     merged = oof.merge(
-        stations[["station_name", "code", "lat", "lon"]].drop_duplicates("station_name"),
-        left_on="station",
-        right_on="station_name",
+        stations[["code", "station_name", "lat", "lon"]],
+        on="code",
         how="left",
     )
     missing = merged["lat"].isna().sum()
@@ -125,7 +118,7 @@ def load_stations():
         if pd.isna(code):
             continue
         station_lookup[code] = {
-            "name":      r["station"],
+            "name":      r["station_name"],
             "actual":    int(r["actual_ridership"]),
             "predicted": int(r["oof_predicted_ridership"]),
             "ratio":     float(r["demand_ratio"]) if pd.notna(r["demand_ratio"]) else None,
@@ -143,19 +136,21 @@ def load_stations():
         ratio = r["demand_ratio"]
         if pd.isna(ratio):
             color, label = "#888888", "unknown"
-        elif ratio > 3.0:
-            color, label = "#ef4444", f"{ratio:.1f}× underserved"
-        elif ratio > 2.0:
-            color, label = "#f97316", f"{ratio:.1f}× underserved"
-        elif ratio > 1.3:
-            color, label = "#eab308", f"{ratio:.1f}× moderate gap"
-        elif ratio >= 0.7:
+        elif ratio < 0.33:
+            # actual << predicted: strongly underserved
+            color, label = "#ef4444", f"{1/ratio:.1f}× underserved"
+        elif ratio < 0.5:
+            color, label = "#f97316", f"{1/ratio:.1f}× underserved"
+        elif ratio < 0.77:
+            color, label = "#eab308", f"{1/ratio:.1f}× below model"
+        elif ratio <= 1.3:
             color, label = "#22c55e", "well-matched"
         else:
-            color, label = "#06b6d4", f"{ratio:.2f}× overpredicted"
+            # actual >> predicted: outperforming model
+            color, label = "#06b6d4", f"{ratio:.1f}× outperforms model"
 
         records.append({
-            "name":      r["station"],
+            "name":      r["station_name"],
             "actual":    int(r["actual_ridership"]),
             "predicted": int(r["oof_predicted_ridership"]),
             "ratio":     float(ratio) if not pd.isna(ratio) else None,
@@ -166,10 +161,10 @@ def load_stations():
             "lon":       round(float(r["lon"]), 5),
         })
 
-    # Top 20 underserved (actual > 50k)
+    # Top 20 underserved: predicted >> actual (lowest ratio), min 50k actual
     top20 = list(dict.fromkeys(
         merged[merged["actual_ridership"] > 50_000]
-        .nlargest(20, "demand_ratio")["station"]
+        .nsmallest(20, "demand_ratio")["station_name"]
         .tolist()
     ))
     print(f"  Top 20 underserved: {top20[:5]} …")
@@ -407,35 +402,34 @@ HTML_TEMPLATE = """\
 
 <div id="controls">
   <button class="filter-btn active" data-filter="all">All stations</button>
-  <button class="filter-btn" data-filter="underserved">Underserved (&gt;1.3&times;)</button>
+  <button class="filter-btn" data-filter="underserved">Underserved</button>
+  <button class="filter-btn" data-filter="outperforms">Outperforms model</button>
   <button class="filter-btn" data-filter="top20">Top 20 targets</button>
-  <button class="filter-btn" data-filter="suppressed">Suppressed demand</button>
   <div class="sep"></div>
   <button class="filter-btn active" data-seg="all_seg">All segments</button>
-  <button class="filter-btn" data-seg="hot">Underserved (&gt;2&times;)</button>
+  <button class="filter-btn" data-seg="underserved_low">Underserved + low freq</button>
   <button class="filter-btn" data-seg="low_freq">Low freq (&le;14/wk)</button>
-  <button class="filter-btn" data-seg="hot_low">Underserved + Low freq</button>
 </div>
 
 <div id="map"></div>
 
 <div id="legend">
   <div class="legend-section">
-    <h3>Station demand ratio</h3>
-    <div class="legend-row"><div class="legend-dot" style="background:#ef4444"></div><span>&gt; 3.0&times; severely underserved</span></div>
-    <div class="legend-row"><div class="legend-dot" style="background:#f97316"></div><span>2.0 &ndash; 3.0&times; underserved</span></div>
-    <div class="legend-row"><div class="legend-dot" style="background:#eab308"></div><span>1.3 &ndash; 2.0&times; moderate gap</span></div>
-    <div class="legend-row"><div class="legend-dot" style="background:#22c55e"></div><span>0.7 &ndash; 1.3&times; well-matched</span></div>
-    <div class="legend-row"><div class="legend-dot" style="background:#06b6d4"></div><span>&lt; 0.7&times; overpredicted</span></div>
-    <div class="legend-row"><div class="legend-dot" style="background:#a855f7"></div><span>&lt; 0.7&times; + low service &mdash; suppressed demand</span></div>
+    <h3>Station — actual ÷ predicted</h3>
+    <div class="legend-row"><div class="legend-dot" style="background:#ef4444"></div><span>&lt; 0.33 &mdash; severely underserved</span></div>
+    <div class="legend-row"><div class="legend-dot" style="background:#f97316"></div><span>0.33 &ndash; 0.5 &mdash; underserved</span></div>
+    <div class="legend-row"><div class="legend-dot" style="background:#eab308"></div><span>0.5 &ndash; 0.77 &mdash; below model</span></div>
+    <div class="legend-row"><div class="legend-dot" style="background:#22c55e"></div><span>0.77 &ndash; 1.3 &mdash; well-matched</span></div>
+    <div class="legend-row"><div class="legend-dot" style="background:#06b6d4"></div><span>&gt; 1.3 &mdash; outperforms model</span></div>
+    <div class="legend-row"><div class="legend-dot" style="background:#a855f7"></div><span>&lt; 1.0 + &le;14 trips/wk &mdash; underserved (strict)</span></div>
   </div>
   <div class="legend-section">
-    <h3>Segment score (avg endpoints)</h3>
-    <div class="legend-row"><div class="legend-line" style="background:#ef4444"></div><span>&gt; 3.0&times;</span></div>
-    <div class="legend-row"><div class="legend-line" style="background:#f97316"></div><span>2.0 &ndash; 3.0&times;</span></div>
-    <div class="legend-row"><div class="legend-line" style="background:#eab308"></div><span>1.3 &ndash; 2.0&times;</span></div>
-    <div class="legend-row"><div class="legend-line" style="background:#22c55e"></div><span>0.7 &ndash; 1.3&times;</span></div>
-    <div class="legend-row"><div class="legend-line" style="background:#06b6d4"></div><span>&lt; 0.7&times;</span></div>
+    <h3>Segment (avg of endpoints)</h3>
+    <div class="legend-row"><div class="legend-line" style="background:#ef4444"></div><span>&lt; 0.33</span></div>
+    <div class="legend-row"><div class="legend-line" style="background:#f97316"></div><span>0.33 &ndash; 0.5</span></div>
+    <div class="legend-row"><div class="legend-line" style="background:#eab308"></div><span>0.5 &ndash; 0.77</span></div>
+    <div class="legend-row"><div class="legend-line" style="background:#22c55e"></div><span>0.77 &ndash; 1.3</span></div>
+    <div class="legend-row"><div class="legend-line" style="background:#06b6d4"></div><span>&gt; 1.3</span></div>
     <div class="legend-row" style="margin-top:4px;"><span style="color:#475569;">Thicker line = fewer weekly trips</span></div>
   </div>
 </div>
@@ -447,11 +441,11 @@ const TOP20    = new Set(__TOP20_JSON__);
 
 function scoreColor(s) {
   if (s == null) return '#334155';
-  if (s > 3.0) return '#ef4444';
-  if (s > 2.0) return '#f97316';
-  if (s > 1.3) return '#eab308';
-  if (s >= 0.7) return '#22c55e';
-  return '#06b6d4';
+  if (s < 0.33) return '#ef4444';   // strongly underserved
+  if (s < 0.5)  return '#f97316';
+  if (s < 0.77) return '#eab308';
+  if (s <= 1.3) return '#22c55e';   // well-matched
+  return '#06b6d4';                 // over model
 }
 
 function tripWeight(trips) {
@@ -505,7 +499,7 @@ const stationLayer = L.layerGroup().addTo(map);
 let allMarkers = [];
 
 STATIONS.forEach(s => {
-  const isSuppressed = s.ratio !== null && s.ratio < 0.7
+  const isSuppressed = s.ratio !== null && s.ratio < 1.0
                     && s.min_trips !== null && s.min_trips <= 14;
   const dotColor = isSuppressed ? '#a855f7' : s.color;
 
@@ -536,10 +530,10 @@ function applyStationFilter(filter) {
   allMarkers.forEach(m => {
     const s = m._stationData;
     let show = filter === 'all'
-      || (filter === 'underserved' && s.ratio !== null && s.ratio > 1.3)
-      || (filter === 'top20' && TOP20.has(s.name))
-      || (filter === 'suppressed' && s.ratio !== null && s.ratio < 0.7
-          && s.min_trips !== null && s.min_trips <= 14);
+      || (filter === 'underserved' && s.ratio !== null && s.ratio < 1.0
+          && s.min_trips !== null && s.min_trips <= 14)
+      || (filter === 'outperforms' && s.ratio !== null && s.ratio > 1.3)
+      || (filter === 'top20' && TOP20.has(s.name));
     if (show) m.addTo(stationLayer);
   });
 }
@@ -558,9 +552,8 @@ function applySegmentFilter(filter) {
   allSegments.forEach(line => {
     const s = line._segData;
     let show = filter === 'all_seg'
-      || (filter === 'hot'      && s.score != null && s.score > 2.0)
-      || (filter === 'low_freq' && s.trips <= 14)
-      || (filter === 'hot_low'  && s.score != null && s.score > 2.0 && s.trips <= 14);
+      || (filter === 'underserved_low' && s.score != null && s.score < 1.0 && s.trips <= 14)
+      || (filter === 'low_freq'        && s.trips <= 14);
     if (show) line.addTo(segmentLayer);
   });
 }
@@ -614,17 +607,30 @@ def main():
     print(f"\nWrote {OUT}  ({size_kb:.0f} KB)")
     assert size_kb < 2048, f"Output is {size_kb:.0f} KB — exceeds 2MB budget!"
 
-    # Print top underserved low-frequency segments
+    # Print top underserved segments — deduplicated by station pair (direction-agnostic)
     scored = [s for s in segments if s["score"] is not None]
-    scored.sort(key=lambda s: -s["score"])
+    scored.sort(key=lambda s: s["score"])  # lowest ratio = most underserved first
+
+    def dedup_by_pair(seg_list, n):
+        seen = set()
+        out = []
+        for s in seg_list:
+            key = frozenset([s["from"], s["to"]])
+            if key not in seen:
+                seen.add(key)
+                out.append(s)
+            if len(out) == n:
+                break
+        return out
+
     print("\nTop 10 underserved segments (by avg endpoint ratio):")
-    for s in scored[:10]:
+    for s in dedup_by_pair(scored, 10):
         print(f"  {s['route']:30s} {s['from']:>30s} → {s['to']:<30s} "
               f"score={s['score']:.2f}  trips/wk={s['trips']}")
 
-    low_freq = [s for s in scored if s["trips"] <= 14]
+    low_freq = [s for s in scored if s["trips"] <= 14]  # already sorted ascending
     print(f"\nTop 10 underserved + low-frequency (≤14/wk) segments:")
-    for s in low_freq[:10]:
+    for s in dedup_by_pair(low_freq, 10):
         print(f"  {s['route']:30s} {s['from']:>30s} → {s['to']:<30s} "
               f"score={s['score']:.2f}  trips/wk={s['trips']}")
 

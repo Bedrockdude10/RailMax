@@ -56,7 +56,13 @@ def make_ebm(feature_names: list) -> ExplainableBoostingRegressor:
 def save_shape_plots(ebm: ExplainableBoostingRegressor, feature_names: list):
     explanation = ebm.explain_global(name="EBM v1")
 
+    skipped = 0
     for i, name in enumerate(feature_names):
+        plot_path = SHAPE_DIR / f"{name.replace('/', '_')}.png"
+        if plot_path.exists():
+            skipped += 1
+            continue
+
         try:
             feat_data = explanation.data(i)
         except Exception:
@@ -78,9 +84,66 @@ def save_shape_plots(ebm: ExplainableBoostingRegressor, feature_names: list):
             yaxis_title="Effect on log(ridership)",
             template="plotly_white",
         )
-        fig.write_image(str(SHAPE_DIR / f"{name.replace('/', '_')}.png"))
+        fig.write_image(str(plot_path))
 
+    if skipped:
+        print(f"  Skipped {skipped} existing plots (delete {SHAPE_DIR}/ to regenerate)")
     print(f"  Shape plots saved to {SHAPE_DIR}/")
+
+
+def save_shape_data(ebm: ExplainableBoostingRegressor, feature_names: list):
+    """
+    Save shape function values to CSV for programmatic analysis.
+
+    Outputs two files:
+    - shape_functions.csv: one row per (feature, bin) with x value and score
+    - feature_importance.csv: one row per feature, ranked by mean |score|
+    """
+    explanation = ebm.explain_global(name="EBM v1")
+
+    rows = []
+    importance_rows = []
+
+    for i, name in enumerate(feature_names):
+        try:
+            feat_data = explanation.data(i)
+        except Exception:
+            continue
+
+        names = feat_data.get("names", [])
+        scores = feat_data.get("scores", [])
+        if len(names) == 0 or len(scores) == 0:
+            continue
+        if isinstance(scores, np.ndarray) and scores.ndim == 2:
+            continue  # skip interaction terms
+
+        scores_arr = np.array(scores)
+        mean_abs_score = float(np.mean(np.abs(scores_arr)))
+        score_range = float(scores_arr.max() - scores_arr.min())
+
+        importance_rows.append({
+            "feature": name,
+            "mean_abs_score": round(mean_abs_score, 5),
+            "score_range": round(score_range, 5),
+            "n_bins": len(names),
+        })
+
+        for x_val, score in zip(names, scores_arr):
+            rows.append({
+                "feature": name,
+                "x": x_val,
+                "score": round(float(score), 5),
+            })
+
+    shape_df = pd.DataFrame(rows)
+    shape_df.to_csv(METRICS_DIR / "shape_functions.csv", index=False)
+
+    imp_df = pd.DataFrame(importance_rows).sort_values("mean_abs_score", ascending=False)
+    imp_df.to_csv(METRICS_DIR / "feature_importance.csv", index=False)
+
+    print(f"  Shape data saved to {METRICS_DIR}/shape_functions.csv")
+    print(f"\nFeature importance (mean |score|):")
+    print(imp_df.to_string(index=False))
 
 
 # ── Metrics ────────────────────────────────────────────────────────────────────
@@ -89,17 +152,12 @@ def compute_metrics(y_true_log: np.ndarray, y_pred_log: np.ndarray,
                     label: str = "") -> dict:
     rmse_log = np.sqrt(mean_squared_error(y_true_log, y_pred_log))
     r2 = r2_score(y_true_log, y_pred_log)
-    mape = np.mean(
-        np.abs((np.expm1(y_true_log) - np.expm1(y_pred_log))
-               / np.clip(np.expm1(y_true_log), 1, None))
-    ) * 100
 
     print(f"\n{label} metrics:")
     print(f"  RMSE (log scale): {rmse_log:.4f}")
     print(f"  R²:               {r2:.4f}")
-    print(f"  MAPE:             {mape:.1f}%")
 
-    return {"label": label, "rmse_log": rmse_log, "r2": r2, "mape": mape}
+    return {"label": label, "rmse_log": rmse_log, "r2": r2}
 
 
 # ── Cross-validation ───────────────────────────────────────────────────────────
@@ -167,9 +225,10 @@ def main():
 
     fold_df = pd.DataFrame(fold_metrics)
     print(f"\nPer-fold summary:")
-    print(fold_df[["label", "rmse_log", "r2", "mape"]].to_string(index=False))
+    print(fold_df[["label", "rmse_log", "r2"]].to_string(index=False))
     print(f"\nMean ± std:  RMSE={fold_df['rmse_log'].mean():.4f} ± {fold_df['rmse_log'].std():.4f}"
           f"  R²={fold_df['r2'].mean():.4f} ± {fold_df['r2'].std():.4f}")
+
 
     # ── Final model on all data ──
     print("\nFitting final model on all data …")
@@ -183,12 +242,13 @@ def main():
         pickle.dump({"ebm": final_ebm, "features": X.columns.tolist()}, f)
     print(f"Model saved to {model_path}")
 
-    # ── Shape plots ──
+    # ── Shape plots + data ──
     print("\nGenerating shape function plots …")
     try:
         save_shape_plots(final_ebm, X.columns.tolist())
+        save_shape_data(final_ebm, X.columns.tolist())
     except Exception as e:
-        print(f"  Warning: shape plot generation failed: {e}")
+        print(f"  Warning: shape plot/data generation failed: {e}")
 
     # ── Save metrics ──
     all_metrics = fold_df.copy()
@@ -196,7 +256,9 @@ def main():
     all_metrics.to_csv(METRICS_DIR / "training_metrics_v1.csv", index=False)
 
     # Save OOF predictions for inspection
+    code_col = df["code"] if "code" in df.columns else pd.Series([""] * len(df))
     oof_df = pd.DataFrame({
+        "code": code_col.values,
         "station": name_col.values,
         "actual_ridership": np.expm1(y_log).astype(int),
         "oof_predicted_ridership": np.expm1(oof_preds).astype(int),
@@ -205,20 +267,6 @@ def main():
     })
     oof_df.to_csv(METRICS_DIR / "oof_predictions_v1.csv", index=False)
     print(f"Metrics saved to {METRICS_DIR}/")
-
-    # ── Compare vs v0 ──
-    v0_path = METRICS_DIR / "training_metrics.csv"
-    if v0_path.exists():
-        v0 = pd.read_csv(v0_path)
-        v0_oof = v0[v0["label"] == "CV (OOF)"].iloc[0]
-        print("\n── v0 vs v1 comparison (OOF) ──")
-        print(f"  {'Metric':<18} {'v0':>10} {'v1':>10} {'delta':>10}")
-        print(f"  {'RMSE (log)':18} {v0_oof['rmse_log']:10.4f} {oof_metrics['rmse_log']:10.4f}"
-              f" {oof_metrics['rmse_log'] - v0_oof['rmse_log']:+10.4f}")
-        print(f"  {'R²':18} {v0_oof['r2']:10.4f} {oof_metrics['r2']:10.4f}"
-              f" {oof_metrics['r2'] - v0_oof['r2']:+10.4f}")
-        print(f"  {'MAPE':18} {v0_oof['mape']:10.1f} {oof_metrics['mape']:10.1f}"
-              f" {oof_metrics['mape'] - v0_oof['mape']:+10.1f}")
 
     return final_ebm
 
