@@ -1,2 +1,0 @@
-model,n_holdout,rmse_log,r2,mape_pct,n_within_30pct,criterion_pass
-ebm_v0.pkl,4,1.7625034492242702,-13.079635103502344,73.25,0,False

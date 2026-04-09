@@ -184,3 +184,5 @@ cython_debug/
 data/raw/
 models/*.pkl
 results/shape_functions/*.png
+
+.DS_Store

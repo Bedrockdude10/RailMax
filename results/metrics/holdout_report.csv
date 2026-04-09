@@ -1,5 +1,0 @@
-station_name,annual_ridership,predicted_ridership,abs_error,pct_error,within_30pct
-"Chicago, IL",3175856.0,206745,2969111.0,93.5,False
-"Boston, MA",1884275.0,910762,973513.0,51.7,False
-"Philadelphia, PA",5586174.0,2037905,3548269.0,63.5,False
-"Washington, DC",6010221.0,946341,5063880.0,84.3,False
