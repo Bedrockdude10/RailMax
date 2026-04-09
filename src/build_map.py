@@ -82,6 +82,29 @@ def load_gtfs():
 
 # ── Load stations + OOF predictions ───────────────────────────────────────────
 
+# Stations that are co-located and should be rendered as a single map dot.
+# Each entry: (display_name, [code_1, code_2, ...])
+# lat/lon will be the centroid of the grouped stations.
+STATION_DISPLAY_GROUPS = [
+    ("Boston South Station / Back Bay", ["BOS", "BBY"]),
+    ("Newark / Newark Airport",         ["NWK", "EWR"]),
+]
+
+
+def _ratio_label(ratio):
+    if ratio is None:
+        return "#888888", "unknown"
+    if ratio < 0.33:
+        return "#ef4444", f"{1/ratio:.1f}× underserved"
+    if ratio < 0.5:
+        return "#f97316", f"{1/ratio:.1f}× underserved"
+    if ratio < 0.77:
+        return "#eab308", f"{1/ratio:.1f}× below model"
+    if ratio <= 1.3:
+        return "#22c55e", "well-matched"
+    return "#06b6d4", f"{ratio:.1f}× outperforms model"
+
+
 def load_stations():
     """
     Merge OOF predictions with station coordinates.
@@ -111,7 +134,7 @@ def load_stations():
 
     print(f"  {len(merged)} stations with predictions + coordinates")
 
-    # Build lookup by station code
+    # Build lookup by station code (individual entries — used for segment scoring)
     station_lookup = {}
     for _, r in merged.iterrows():
         code = r["code"]
@@ -127,33 +150,54 @@ def load_stations():
         }
 
     # Build station marker records for JSON
+    # Radius scaled on log ridership across all individual stations
     log_rs = np.log1p(merged["actual_ridership"])
     lr_min, lr_max = log_rs.min(), log_rs.max()
     merged["radius"] = (5 + (log_rs - lr_min) / (lr_max - lr_min) * 17).round(1)
 
-    records = []
-    for _, r in merged.iterrows():
-        ratio = r["demand_ratio"]
-        if pd.isna(ratio):
-            color, label = "#888888", "unknown"
-        elif ratio < 0.33:
-            # actual << predicted: strongly underserved
-            color, label = "#ef4444", f"{1/ratio:.1f}× underserved"
-        elif ratio < 0.5:
-            color, label = "#f97316", f"{1/ratio:.1f}× underserved"
-        elif ratio < 0.77:
-            color, label = "#eab308", f"{1/ratio:.1f}× below model"
-        elif ratio <= 1.3:
-            color, label = "#22c55e", "well-matched"
-        else:
-            # actual >> predicted: outperforming model
-            color, label = "#06b6d4", f"{ratio:.1f}× outperforms model"
+    # Track which codes are absorbed into a display group
+    grouped_codes: set[str] = set()
+    for _, member_codes in STATION_DISPLAY_GROUPS:
+        grouped_codes.update(member_codes)
 
+    records = []
+
+    # Emit grouped dots first
+    for display_name, member_codes in STATION_DISPLAY_GROUPS:
+        members = merged[merged["code"].isin(member_codes)]
+        if members.empty:
+            continue
+        actual_total    = int(members["actual_ridership"].sum())
+        predicted_total = int(members["oof_predicted_ridership"].sum())
+        ratio = round(actual_total / predicted_total, 3) if predicted_total else None
+        lat = float(members["lat"].mean())
+        lon = float(members["lon"].mean())
+        log_r = np.log1p(actual_total)
+        radius = round(float(5 + (log_r - lr_min) / (lr_max - lr_min) * 17), 1)
+        color, label = _ratio_label(ratio)
+        records.append({
+            "name":      display_name,
+            "actual":    actual_total,
+            "predicted": predicted_total,
+            "ratio":     ratio,
+            "label":     label,
+            "color":     color,
+            "radius":    radius,
+            "lat":       round(lat, 5),
+            "lon":       round(lon, 5),
+        })
+
+    # Emit all remaining (ungrouped) stations
+    for _, r in merged.iterrows():
+        if r["code"] in grouped_codes:
+            continue
+        ratio = r["demand_ratio"] if pd.notna(r["demand_ratio"]) else None
+        color, label = _ratio_label(ratio)
         records.append({
             "name":      r["station_name"],
             "actual":    int(r["actual_ridership"]),
             "predicted": int(r["oof_predicted_ridership"]),
-            "ratio":     float(ratio) if not pd.isna(ratio) else None,
+            "ratio":     float(ratio) if ratio is not None else None,
             "label":     label,
             "color":     color,
             "radius":    float(r["radius"]),
@@ -404,7 +448,7 @@ HTML_TEMPLATE = """\
   <button class="filter-btn active" data-filter="all">All stations</button>
   <button class="filter-btn" data-filter="underserved">Underserved</button>
   <button class="filter-btn" data-filter="outperforms">Outperforms model</button>
-  <button class="filter-btn" data-filter="top20">Top 20 targets</button>
+  <button class="filter-btn" data-filter="top20">Top 20 Targets for Increased Service</button>
   <div class="sep"></div>
   <button class="filter-btn active" data-seg="all_seg">All segments</button>
   <button class="filter-btn" data-seg="underserved_low">Underserved + low freq</button>
@@ -449,10 +493,10 @@ function scoreColor(s) {
 }
 
 function tripWeight(trips) {
-  if (trips <= 14) return 5;
-  if (trips <= 28) return 4;
-  if (trips <= 56) return 3;
-  if (trips <= 140) return 2.5;
+  if (trips > 140) return 5;
+  if (trips > 56)  return 4;
+  if (trips > 28)  return 3;
+  if (trips > 14)  return 2.5;
   return 2;
 }
 
