@@ -4,7 +4,7 @@ features.py
 Compute engineered features for the stations DataFrame:
   - metro_pop: population of the nearest US city within 50 km
   - distance_to_nearest_major_city_km: Haversine to nearest city with pop > 500k
-  - num_nearby_stations: count of other Amtrak TRAIN stations within 80 km
+  - num_amtrak_stations_80km: count of other Amtrak TRAIN stations within 80 km
 
 Expects stations.csv produced by parse_and_join.py.
 Writes an updated stations.csv in place (adds columns).
@@ -96,7 +96,7 @@ def add_distance_to_major_city(stations: pd.DataFrame,
     return stations
 
 
-def add_num_nearby_stations(stations: pd.DataFrame,
+def add_num_amtrak_stations_80km(stations: pd.DataFrame,
                              radius_km: float = NEARBY_STATIONS_RADIUS_KM) -> pd.DataFrame:
     """
     Count of OTHER Amtrak stations within radius_km of each station.
@@ -120,7 +120,7 @@ def add_num_nearby_stations(stations: pd.DataFrame,
         num_nearby[i] = int(counts[k])
 
     stations = stations.copy()
-    stations["num_nearby_stations"] = num_nearby
+    stations["num_amtrak_stations_80km"] = num_nearby
     return stations
 
 
@@ -134,8 +134,8 @@ def compute_all_features(stations: pd.DataFrame,
     print("  Computing distance_to_nearest_major_city_km …")
     stations = add_distance_to_major_city(stations, cities)
 
-    print("  Computing num_nearby_stations …")
-    stations = add_num_nearby_stations(stations)
+    print("  Computing num_amtrak_stations_80km …")
+    stations = add_num_amtrak_stations_80km(stations)
 
     return stations
 
@@ -162,7 +162,7 @@ def main():
     print(f"\nUpdated {in_path} with engineered features")
 
     feature_cols = ["metro_pop", "distance_to_nearest_major_city_km",
-                    "num_nearby_stations"]
+                    "num_amtrak_stations_80km"]
     print(stations[feature_cols].describe().to_string())
 
 

@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Amtrak Underservice Map — Segment View</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #0a0e17; color: #cbd5e1; font-family: 'DM Sans', system-ui, sans-serif; height: 100vh; display: flex; flex-direction: column; }
+
+  #header {
+    padding: 14px 20px 10px;
+    background: linear-gradient(180deg, #0f1729 0%, #111827 100%);
+    border-bottom: 1px solid #1e293b;
+    display: flex; align-items: baseline; gap: 16px; flex-shrink: 0;
+  }
+  #header h1 { font-size: 15px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #f1f5f9; }
+  #header p  { font-size: 12px; color: #475569; }
+
+  #controls {
+    padding: 8px 16px;
+    background: #0f1729;
+    border-bottom: 1px solid #1e293b;
+    display: flex; gap: 8px; flex-shrink: 0; flex-wrap: wrap; align-items: center;
+  }
+  .filter-btn {
+    padding: 5px 14px; border-radius: 20px;
+    border: 1px solid #1e293b; background: transparent;
+    color: #64748b; font-size: 12px; cursor: pointer;
+    transition: all 0.15s; font-family: inherit; letter-spacing: 0.02em;
+  }
+  .filter-btn:hover { border-color: #475569; color: #cbd5e1; }
+  .filter-btn.active { background: #1d4ed8; border-color: #1d4ed8; color: #fff; }
+
+  .sep { width: 1px; height: 20px; background: #1e293b; margin: 0 4px; }
+
+  #map { flex: 1; }
+
+  #legend {
+    position: absolute; bottom: 28px; right: 14px; z-index: 1000;
+    background: rgba(15,23,41,0.95); border: 1px solid #1e293b;
+    border-radius: 10px; padding: 14px 18px; font-size: 11px; line-height: 1.9;
+    backdrop-filter: blur(8px);
+  }
+  #legend h3 { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: #475569; margin-bottom: 6px; }
+  .legend-section { margin-bottom: 10px; }
+  .legend-row { display: flex; align-items: center; gap: 8px; color: #94a3b8; }
+  .legend-dot  { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .legend-line { width: 22px; height: 3px; border-radius: 2px; flex-shrink: 0; }
+
+  .leaflet-popup-content-wrapper {
+    background: #1e293b !important; border: 1px solid #334155 !important;
+    border-radius: 10px !important; box-shadow: 0 12px 32px rgba(0,0,0,0.6) !important;
+    color: #e2e8f0 !important;
+  }
+  .leaflet-popup-tip { background: #1e293b !important; }
+  .leaflet-popup-content { font-family: 'DM Sans', system-ui, sans-serif; margin: 12px 14px !important; }
+  .popup-name  { font-size: 14px; font-weight: 700; margin-bottom: 8px; color: #f1f5f9; }
+  .popup-row   { font-size: 12px; display: flex; justify-content: space-between; gap: 24px; margin: 3px 0; color: #94a3b8; }
+  .popup-row span:last-child { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #e2e8f0; }
+  .popup-label {
+    font-size: 11px; font-weight: 600; margin-top: 8px; padding: 3px 10px;
+    border-radius: 5px; display: inline-block;
+  }
+
+  .seg-popup-name  { font-size: 13px; font-weight: 700; margin-bottom: 4px; color: #f1f5f9; }
+  .seg-popup-route { font-size: 11px; color: #64748b; margin-bottom: 8px; font-style: italic; }
+  .seg-popup-row   { font-size: 11px; display: flex; justify-content: space-between; gap: 16px; margin: 2px 0; color: #94a3b8; }
+  .seg-popup-row span:last-child { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #e2e8f0; }
+
+  .slider-section {
+    margin-top: 10px; padding-top: 8px; border-top: 1px solid #334155;
+  }
+  .slider-label { font-size: 11px; color: #64748b; margin-bottom: 4px; }
+  .slider-label span { font-family: 'JetBrains Mono', monospace; color: #e2e8f0; }
+  .trip-slider { width: 100%; accent-color: #1d4ed8; cursor: pointer; }
+  .slider-result { font-size: 12px; margin-top: 6px; color: #94a3b8; }
+  .slider-result span { font-family: 'JetBrains Mono', monospace; color: #22c55e; font-weight: 600; }
+
+  /* ── Top pairs panel ────────────────────────────────────────────────────── */
+  #pairs-panel {
+    position: absolute; top: 110px; left: 14px; z-index: 1000;
+    width: 310px;
+    background: rgba(15,23,41,0.96); border: 1px solid #1e293b;
+    border-radius: 10px; backdrop-filter: blur(8px);
+    display: flex; flex-direction: column; max-height: calc(100vh - 140px);
+  }
+  #pairs-header {
+    padding: 10px 14px 8px; border-bottom: 1px solid #1e293b;
+    display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
+  }
+  #pairs-header h3 {
+    font-size: 9px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.12em; color: #475569;
+  }
+  #pairs-toggle {
+    font-size: 10px; color: #475569; cursor: pointer; background: none;
+    border: none; font-family: inherit; padding: 0; line-height: 1;
+  }
+  #pairs-toggle:hover { color: #94a3b8; }
+  #pairs-body { overflow-y: auto; padding: 6px 0; }
+  #pairs-body.collapsed { display: none; }
+
+  .pair-row {
+    padding: 7px 14px; cursor: pointer; border-bottom: 1px solid #0f172a;
+    transition: background 0.1s;
+  }
+  .pair-row:hover { background: #1e293b; }
+  .pair-row:last-child { border-bottom: none; }
+  .pair-rank { font-size: 9px; color: #334155; font-family: 'JetBrains Mono', monospace; float: right; margin-top: 1px; }
+  .pair-cities { font-size: 12px; font-weight: 600; color: #e2e8f0; margin-bottom: 3px; }
+  .pair-cities .arrow { color: #334155; margin: 0 4px; }
+  .pair-meta { font-size: 10px; color: #475569; display: flex; gap: 10px; }
+  .pair-meta .score { font-family: 'JetBrains Mono', monospace; }
+  .pair-meta .score.red    { color: #ef4444; }
+  .pair-meta .score.orange { color: #f97316; }
+  .pair-meta .score.yellow { color: #eab308; }
+  .pair-route { font-size: 10px; color: #334155; margin-top: 2px; font-style: italic; }
+</style>
+</head>
+<body>
+
+<div id="header">
+  <h1>Amtrak Underservice Map</h1>
+  <p>Route segments colored by average endpoint demand ratio &mdash; thicker line = more weekly trips</p>
+</div>
+
+<div id="controls">
+  <button class="filter-btn active" data-filter="all">All stations</button>
+  <button class="filter-btn" data-filter="underperforms">Underperforms model</button>
+  <button class="filter-btn" data-filter="suppressed">Suppressed demand</button>
+  <button class="filter-btn" data-filter="outperforms">Outperforms model</button>
+  <button class="filter-btn" data-filter="top20">Top 20 Targets for Increased Service</button>
+  <div class="sep"></div>
+  <button class="filter-btn active" data-seg="all_seg">All segments</button>
+  <button class="filter-btn" data-seg="underserved_low">Suppressed demand</button>
+  <button class="filter-btn" data-seg="low_freq">Low freq (&le;__SUPPRESSED_MAX_TRIPS__/wk)</button>
+  <div class="sep"></div>
+  <button class="filter-btn" id="expansion-toggle" data-expansion="hidden">&#x2b; Expansion cities</button>
+</div>
+
+<div id="map"></div>
+
+<div id="pairs-panel">
+  <div id="pairs-header">
+    <h3>Top 20 City Pairs for Increased Service</h3>
+    <button id="pairs-toggle">&#x25BC;</button>
+  </div>
+  <div id="pairs-body"></div>
+</div>
+
+<div id="legend">
+  <div class="legend-section">
+    <h3>Station — actual ÷ predicted</h3>
+    <div id="legend-stations"></div>
+  </div>
+  <div class="legend-section">
+    <h3>Segment (avg of endpoints)</h3>
+    <div id="legend-segments"></div>
+    <div class="legend-row" style="margin-top:4px;"><span style="color:#475569;">Thicker line = more weekly trips</span></div>
+  </div>
+  <div class="legend-section">
+    <h3>Expansion candidates</h3>
+    <div class="legend-row"><div class="legend-dot" style="background:#f59e0b;border:2px dashed #fbbf24;"></div><span>Predicted ridership (no service)</span></div>
+  </div>
+</div>
+
+<script>
+const SEGMENTS   = __SEGMENTS_JSON__;
+const STATIONS   = __STATIONS_JSON__;
+const TOP20      = new Set(__TOP20_JSON__);
+const WD_SHAPE   = __WD_SHAPE_JSON__;  // {bins: [...], scores: [...]}
+const CANDIDATES = __CANDIDATES_JSON__;
+const TH         = __THRESHOLDS_JSON__;
+
+// ── Shape function lookup ─────────────────────────────────────────────────────
+// Find the shape score for a given weekly_departures value by binary search.
+function wdShapeScore(trips) {
+  const bins = WD_SHAPE.bins;
+  const scores = WD_SHAPE.scores;
+  if (!bins.length) return 0;
+  if (trips <= bins[0]) return scores[0];
+  if (trips >= bins[bins.length - 1]) return scores[scores.length - 1];
+  // Binary search for the right bin
+  let lo = 0, hi = bins.length - 1;
+  while (lo < hi - 1) {
+    const mid = (lo + hi) >> 1;
+    if (bins[mid] <= trips) lo = mid; else hi = mid;
+  }
+  // Linear interpolation between lo and hi
+  const t = (trips - bins[lo]) / (bins[hi] - bins[lo]);
+  return scores[lo] + t * (scores[hi] - scores[lo]);
+}
+
+function scoreColor(s) {
+  if (s == null) return '#334155';
+  if (s < TH.severe)       return '#ef4444';
+  if (s < TH.underserved)  return '#f97316';
+  if (s < TH.belowModel)   return '#eab308';
+  if (s <= TH.wellMatched)  return '#22c55e';
+  return '#06b6d4';
+}
+
+function tripWeight(trips) {
+  if (trips > 140) return 5;
+  if (trips > 56)  return 4;
+  if (trips > 28)  return 3;
+  if (trips > 14)  return 2.5;
+  return 2;
+}
+
+// ── Build legend from thresholds ──────────────────────────────────────────────
+(function buildLegend() {
+  const dotRows = [
+    { color: '#ef4444', text: `< ${TH.severe} — severely underserved` },
+    { color: '#f97316', text: `${TH.severe} – ${TH.underserved} — underserved` },
+    { color: '#eab308', text: `${TH.underserved} – ${TH.belowModel} — below model` },
+    { color: '#22c55e', text: `${TH.belowModel} – ${TH.wellMatched} — well-matched` },
+    { color: '#06b6d4', text: `> ${TH.wellMatched} — outperforms model` },
+    { color: '#a855f7', text: `< ${TH.suppressed} + ≤${TH.suppressedMaxTrips} trips/wk — suppressed demand` },
+  ];
+  const stEl = document.getElementById('legend-stations');
+  dotRows.forEach(r => {
+    stEl.innerHTML += `<div class="legend-row"><div class="legend-dot" style="background:${r.color}"></div><span>${r.text}</span></div>`;
+  });
+
+  const lineRows = [
+    { color: '#ef4444', text: `< ${TH.severe}` },
+    { color: '#f97316', text: `${TH.severe} – ${TH.underserved}` },
+    { color: '#eab308', text: `${TH.underserved} – ${TH.belowModel}` },
+    { color: '#22c55e', text: `${TH.belowModel} – ${TH.wellMatched}` },
+    { color: '#06b6d4', text: `> ${TH.wellMatched}` },
+  ];
+  const segEl = document.getElementById('legend-segments');
+  lineRows.forEach(r => {
+    segEl.innerHTML += `<div class="legend-row"><div class="legend-line" style="background:${r.color}"></div><span>${r.text}</span></div>`;
+  });
+})();
+
+// ── Map ───────────────────────────────────────────────────────────────────────
+const map = L.map('map', { zoomControl: true, preferCanvas: true }).setView([38.5, -96.5], 5);
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png', {
+  attribution: '&copy; <a href="https://carto.com/">CARTO</a> | <a href="https://www.openstreetmap.org/copyright">OSM</a>',
+  subdomains: 'abcd', maxZoom: 19,
+}).addTo(map);
+
+// ── Segments ──────────────────────────────────────────────────────────────────
+const segmentLayer = L.layerGroup().addTo(map);
+let allSegments = [];
+
+SEGMENTS.forEach(s => {
+  const color   = scoreColor(s.score);
+  const weight  = tripWeight(s.trips);
+  const opacity = s.score != null ? 0.75 : 0.25;
+
+  const line = L.polyline(s.coords, {
+    color, weight, opacity, smoothFactor: 1.5, lineCap: 'round',
+  });
+
+  const fmtNum = n => n != null ? n.toLocaleString() : '—';
+  const fmtR   = r => r != null ? r.toFixed(2) + '×' : '—';
+
+  line.bindPopup(`
+    <div class="seg-popup-name">${s.from} → ${s.to}</div>
+    <div class="seg-popup-route">${s.route}</div>
+    <div class="seg-popup-row"><span>Segment score</span><span>${fmtR(s.score)}</span></div>
+    <div class="seg-popup-row"><span>Weekly trips</span><span>${s.trips}</span></div>
+    <hr style="border:none;border-top:1px solid #334155;margin:6px 0;">
+    <div class="seg-popup-row"><span>${s.from.split(',')[0]}</span><span>${fmtNum(s.from_rid)} riders · ${fmtR(s.from_r)}</span></div>
+    <div class="seg-popup-row"><span>${s.to.split(',')[0]}</span><span>${fmtNum(s.to_rid)} riders · ${fmtR(s.to_r)}</span></div>
+  `, { maxWidth: 300, minWidth: 240 });
+
+  line._segData = s;
+  allSegments.push(line);
+  line.addTo(segmentLayer);
+});
+
+// ── Station markers ───────────────────────────────────────────────────────────
+const stationLayer = L.layerGroup().addTo(map);
+let allMarkers = [];
+
+STATIONS.forEach(s => {
+  const isSuppressed = s.ratio !== null && s.ratio < TH.suppressed
+                    && s.min_trips !== null && s.min_trips <= TH.suppressedMaxTrips;
+  const dotColor = isSuppressed ? '#a855f7' : s.color;
+
+  const marker = L.circleMarker([s.lat, s.lon], {
+    radius: s.radius, fillColor: dotColor,
+    color: 'rgba(0,0,0,0.5)', weight: 1, opacity: 1, fillOpacity: 0.85,
+  });
+
+  const labelBg     = dotColor + '22';
+  const labelBorder = dotColor + '66';
+
+  const hasWd = s.weekly_departures != null;
+  const sliderMin = 7;
+  const sliderMax = hasWd ? Math.ceil(Math.max(500, s.weekly_departures) / 7) * 7 : 500;
+  const sliderId = 'wd-' + s.lat.toFixed(4).replace('.','') + s.lon.toFixed(4).replace('.','');
+
+  const sliderHtml = hasWd ? `
+    <div class="slider-section">
+      <div class="slider-label">Weekly departures: <span id="${sliderId}-val">${Math.round(s.weekly_departures)}</span></div>
+      <input class="trip-slider" type="range" id="${sliderId}"
+        min="${sliderMin}" max="${sliderMax}" step="7"
+        value="${Math.round(s.weekly_departures)}">
+      <div class="slider-result">Est. ridership: <span id="${sliderId}-out">${s.actual.toLocaleString()}</span></div>
+    </div>` : '';
+
+  marker.bindPopup(`
+    <div class="popup-name">${s.name}</div>
+    <div class="popup-row"><span>Annual ridership</span><span>${s.actual.toLocaleString()}</span></div>
+    <div class="popup-row"><span>Model predicted</span><span>${s.predicted.toLocaleString()}</span></div>
+    <div class="popup-label" style="color:${dotColor};background:${labelBg};border:1px solid ${labelBorder}">
+      ${isSuppressed ? s.label + ' · suppressed demand' : s.label}
+    </div>
+    ${sliderHtml}
+  `, { maxWidth: 260, minWidth: 220 });
+
+  if (hasWd) {
+    marker.on('popupopen', () => {
+      const slider = document.getElementById(sliderId);
+      const valEl  = document.getElementById(sliderId + '-val');
+      const outEl  = document.getElementById(sliderId + '-out');
+      if (!slider) return;
+
+      const baseScore = wdShapeScore(s.weekly_departures);
+      const logActual = Math.log1p(s.actual);
+
+      slider.addEventListener('input', () => {
+        const newTrips = Number(slider.value);
+        valEl.textContent = newTrips;
+        const delta = wdShapeScore(newTrips) - baseScore;
+        const newRidership = Math.round(Math.expm1(logActual + delta));
+        outEl.textContent = newRidership.toLocaleString();
+      });
+    });
+  }
+
+  marker._stationData = s;
+  allMarkers.push(marker);
+  marker.addTo(stationLayer);
+});
+
+// ── Station filter controls ───────────────────────────────────────────────────
+function applyStationFilter(filter) {
+  stationLayer.clearLayers();
+  allMarkers.forEach(m => {
+    const s = m._stationData;
+    let show = filter === 'all'
+      || (filter === 'underperforms' && s.ratio !== null && s.ratio < TH.belowModel)
+      || (filter === 'suppressed' && s.ratio !== null && s.ratio < TH.suppressed
+          && s.min_trips !== null && s.min_trips <= TH.suppressedMaxTrips)
+      || (filter === 'outperforms' && s.ratio !== null && s.ratio > TH.wellMatched)
+      || (filter === 'top20' && TOP20.has(s.name));
+    if (show) m.addTo(stationLayer);
+  });
+}
+
+document.querySelectorAll('.filter-btn[data-filter]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.filter-btn[data-filter]').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    applyStationFilter(btn.dataset.filter);
+  });
+});
+
+// ── Segment filter controls ───────────────────────────────────────────────────
+function applySegmentFilter(filter) {
+  segmentLayer.clearLayers();
+  allSegments.forEach(line => {
+    const s = line._segData;
+    let show = filter === 'all_seg'
+      || (filter === 'underserved_low' && s.score != null && s.score < TH.suppressed && s.trips <= TH.suppressedMaxTrips)
+      || (filter === 'low_freq'        && s.trips <= TH.suppressedMaxTrips);
+    if (show) line.addTo(segmentLayer);
+  });
+}
+
+document.querySelectorAll('.filter-btn[data-seg]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.filter-btn[data-seg]').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    applySegmentFilter(btn.dataset.seg);
+  });
+});
+
+// ── Top 20 city pairs panel ───────────────────────────────────────────────────
+(function buildPairsPanel() {
+  // Deduplicate segments by unordered station pair, keep lowest score per pair.
+  const best = new Map();
+  SEGMENTS.forEach(s => {
+    if (s.score == null) return;
+    const key = [s.from, s.to].sort().join('|||');
+    if (!best.has(key) || s.score < best.get(key).score) best.set(key, s);
+  });
+
+  // Sort ascending by score (most underserved first), take top 20.
+  const top20 = Array.from(best.values())
+    .sort((a, b) => a.score - b.score)
+    .slice(0, 20);
+
+  function scoreClass(sc) {
+    if (sc < TH.severe)      return 'red';
+    if (sc < TH.underserved) return 'orange';
+    return 'yellow';
+  }
+
+  function shortCity(name) {
+    // "Springfield, MA" → "Springfield" — strip state suffix for compactness
+    return name.split(',')[0].trim();
+  }
+
+  const body = document.getElementById('pairs-body');
+  top20.forEach((s, i) => {
+    const div = document.createElement('div');
+    div.className = 'pair-row';
+    div.innerHTML = `
+      <span class="pair-rank">#${i + 1}</span>
+      <div class="pair-cities">
+        ${shortCity(s.from)}<span class="arrow">&#x2192;</span>${shortCity(s.to)}
+      </div>
+      <div class="pair-meta">
+        <span class="score ${scoreClass(s.score)}">${s.score.toFixed(2)}× ratio</span>
+        <span>${s.trips} trips/wk</span>
+      </div>
+      <div class="pair-route">${s.route}</div>`;
+
+    // Clicking a row flies the map to the midpoint of the segment's coords
+    div.addEventListener('click', () => {
+      const lats = s.coords.map(c => c[0]);
+      const lons = s.coords.map(c => c[1]);
+      const midLat = (Math.min(...lats) + Math.max(...lats)) / 2;
+      const midLon = (Math.min(...lons) + Math.max(...lons)) / 2;
+      map.setView([midLat, midLon], 9, { animate: true });
+    });
+
+    body.appendChild(div);
+  });
+
+  // Collapse toggle
+  const toggle = document.getElementById('pairs-toggle');
+  const panelBody = document.getElementById('pairs-body');
+  toggle.addEventListener('click', () => {
+    const collapsed = panelBody.classList.toggle('collapsed');
+    toggle.textContent = collapsed ? '\u25B6' : '\u25BC';
+  });
+})();
+
+// ── Expansion candidates ──────────────────────────────────────────────────────
+const expansionLayer = L.layerGroup();  // hidden by default
+
+CANDIDATES.forEach(c => {
+  const marker = L.circleMarker([c.lat, c.lon], {
+    radius:      c.radius,
+    fillColor:   '#f59e0b',
+    color:       '#fbbf24',
+    weight:      2,
+    dashArray:   '4 3',
+    opacity:     0.9,
+    fillOpacity: 0.55,
+  });
+
+  const busLabel = c.has_intercity_bus
+    ? '<span style="color:#22c55e">&#x2713; intercity bus</span>'
+    : '<span style="color:#ef4444">&#x2717; no intercity bus</span>';
+
+  const popLabel = c.population
+    ? c.population.toLocaleString()
+    : '—';
+
+  marker.bindPopup(`
+    <div class="popup-name">${c.name}</div>
+    <div class="popup-row"><span>Population</span><span>${popLabel}</span></div>
+    <div class="popup-row"><span>Model predicted ridership</span><span>${c.predicted.toLocaleString()}</span></div>
+    <div class="popup-row"><span>Current Amtrak service</span><span style="color:#ef4444">None</span></div>
+    <div class="popup-label" style="color:#f59e0b;background:#f59e0b22;border:1px solid #f59e0b66;">
+      Expansion candidate
+    </div>
+    <div style="margin-top:8px;font-size:11px;color:#64748b;">${busLabel}</div>
+  `, { maxWidth: 260, minWidth: 220 });
+
+  marker.addTo(expansionLayer);
+});
+
+document.getElementById('expansion-toggle').addEventListener('click', function() {
+  const hidden = this.dataset.expansion === 'hidden';
+  if (hidden) {
+    expansionLayer.addTo(map);
+    this.dataset.expansion = 'visible';
+    this.classList.add('active');
+    this.textContent = '- Expansion cities';
+  } else {
+    map.removeLayer(expansionLayer);
+    this.dataset.expansion = 'hidden';
+    this.classList.remove('active');
+    this.textContent = '+ Expansion cities';
+  }
+});
+</script>
+</body>
+</html>

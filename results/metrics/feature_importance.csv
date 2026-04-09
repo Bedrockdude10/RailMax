@@ -3,7 +3,7 @@ weekly_departures,0.94112,3.75719,116
 station_type,0.39689,0.87904,3
 is_terminal,0.28127,0.56253,3
 has_light_rail,0.25578,0.51157,3
-num_nearby_stations,0.23682,0.70141,23
+num_amtrak_stations_80km,0.23682,0.70141,23
 avg_dwell_time_sec,0.22114,0.78173,201
 college_enrollment_15km,0.17138,0.63985,252
 avg_route_length_km,0.17017,0.54986,125

@@ -46,6 +46,32 @@ LONG_DISTANCE_ROUTE_KM = 500.0
 # build_college_features.py: radii (km) for college enrollment proximity
 COLLEGE_RADII_KM = [15]
 
+# ── Map display parameters (build_map.py) ─────────────────────────────────────
+
+# Downsample GTFS shapes: keep every Nth point per segment
+SHAPE_DOWNSAMPLE = 6
+
+# Demand ratio thresholds for station/segment color coding
+RATIO_SEVERE = 0.33
+RATIO_UNDERSERVED = 0.5
+RATIO_BELOW_MODEL = 0.77
+RATIO_WELL_MATCHED_MAX = 1.3
+RATIO_SUPPRESSED = 0.7       # threshold for "suppressed demand" label
+SUPPRESSED_MAX_TRIPS = 14    # max weekly trips for "suppressed demand"
+
+# Minimum actual ridership for top-20 underserved list
+TOP20_MIN_RIDERSHIP = 50_000
+
+# Station marker radius range (pixels)
+MARKER_RADIUS_MIN = 5
+MARKER_RADIUS_MAX = 22  # min + 17
+
+# Stations co-located for display grouping: (display_name, [code1, code2, ...])
+STATION_DISPLAY_GROUPS = [
+    ("Boston South Station / Back Bay", ["BOS", "BBY"]),
+    ("Newark / Newark Airport",         ["NWK", "EWR"]),
+]
+
 # ── State name → abbreviation ─────────────────────────────────────────────────
 
 STATE_ABBR = {

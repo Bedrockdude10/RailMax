@@ -170,7 +170,7 @@ def main():
                 "modes_served": modes,
                 "metro_pop": metro_pop,
                 "distance_to_nearest_major_city_km": dist_major,
-                "num_nearby_stations": num_nearby,
+                "num_amtrak_stations_80km": num_nearby,
                 "weekly_departures": weekly_dep,
                 "service_span_hours": service_span,
                 "is_terminal": int(is_terminal),

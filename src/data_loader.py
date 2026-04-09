@@ -37,7 +37,7 @@ NUMERIC_V0_FEATURES = [
     "modes_served",
     "metro_pop",
     "distance_to_nearest_major_city_km",
-    "num_nearby_stations",
+    "num_amtrak_stations_80km",
 ]
 
 # Categorical features
@@ -114,7 +114,7 @@ def load_stations(path: Optional[Path] = None) -> pd.DataFrame:
 
     # ── Numeric features: leave NaN (EBM handles missing) ──
     for col in ["metro_pop", "distance_to_nearest_major_city_km",
-                "num_nearby_stations"]:
+                "num_amtrak_stations_80km"]:
         if col not in df.columns:
             df[col] = np.nan
 
