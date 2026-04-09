@@ -2,7 +2,7 @@
 
 An open-source, interpretable machine learning model that predicts annual ridership at US Amtrak stations and identifies where increased service would have the greatest impact.
 
-**[View the interactive map](https://bedrockdude10.github.io/RailMe/results/underservice_map.html)**
+**[View the interactive map](https://bedrockdude10.github.io/RailMax/results/underservice_map.html)**
 
 ---
 
