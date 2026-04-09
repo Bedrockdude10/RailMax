@@ -38,7 +38,6 @@ NUMERIC_V0_FEATURES = [
     "metro_pop",
     "distance_to_nearest_major_city_km",
     "num_nearby_stations",
-    "is_northeast_corridor",
 ]
 
 # Categorical features
@@ -49,7 +48,6 @@ CATEGORICAL_FEATURES = [
 # GTFS-derived features (computed by src/build_gtfs_features.py)
 GTFS_FEATURES = [
     "weekly_departures",
-    "num_routes_served",
     "is_terminal",
     "avg_dwell_time_sec",
     "service_span_hours",

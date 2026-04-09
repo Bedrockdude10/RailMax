@@ -37,9 +37,28 @@ GTFS = RAW / "GTFS"
 PROCESSED = ROOT / "data" / "processed"
 METRICS = ROOT / "results" / "metrics"
 OUT = ROOT / "results" / "underservice_map.html"
+SHAPE_FUNCTIONS_CSV = METRICS / "shape_functions.csv"
 
 # Downsample shapes: keep every Nth point per segment.
 SHAPE_DOWNSAMPLE = 6
+
+
+# ── Shape function loader ─────────────────────────────────────────────────────
+
+def load_weekly_departures_shape() -> dict:
+    """
+    Load the weekly_departures shape function bins and scores from shape_functions.csv.
+    Returns {"bins": [x0, x1, ...], "scores": [s0, s1, ...]} sorted by x ascending.
+    Used in the browser to compute what-if ridership estimates when the slider moves.
+    """
+    sf = pd.read_csv(SHAPE_FUNCTIONS_CSV)
+    wd = sf[sf["feature"] == "weekly_departures"].copy()
+    wd["x"] = pd.to_numeric(wd["x"], errors="coerce")
+    wd = wd.dropna(subset=["x"]).sort_values("x")
+    return {
+        "bins":   wd["x"].round(2).tolist(),
+        "scores": wd["score"].tolist(),
+    }
 
 
 # ── Load GTFS ─────────────────────────────────────────────────────────────────
@@ -123,7 +142,7 @@ def load_stations():
     ).round(3)
 
     merged = oof.merge(
-        stations[["code", "station_name", "lat", "lon"]],
+        stations[["code", "station_name", "lat", "lon", "weekly_departures"]],
         on="code",
         how="left",
     )
@@ -175,16 +194,18 @@ def load_stations():
         log_r = np.log1p(actual_total)
         radius = round(float(5 + (log_r - lr_min) / (lr_max - lr_min) * 17), 1)
         color, label = _ratio_label(ratio)
+        wd = members["weekly_departures"].dropna()
         records.append({
-            "name":      display_name,
-            "actual":    actual_total,
-            "predicted": predicted_total,
-            "ratio":     ratio,
-            "label":     label,
-            "color":     color,
-            "radius":    radius,
-            "lat":       round(lat, 5),
-            "lon":       round(lon, 5),
+            "name":               display_name,
+            "actual":             actual_total,
+            "predicted":          predicted_total,
+            "ratio":              ratio,
+            "label":              label,
+            "color":              color,
+            "radius":             radius,
+            "lat":                round(lat, 5),
+            "lon":                round(lon, 5),
+            "weekly_departures":  round(float(wd.mean()), 1) if len(wd) else None,
         })
 
     # Emit all remaining (ungrouped) stations
@@ -193,16 +214,18 @@ def load_stations():
             continue
         ratio = r["demand_ratio"] if pd.notna(r["demand_ratio"]) else None
         color, label = _ratio_label(ratio)
+        wd = r["weekly_departures"] if pd.notna(r["weekly_departures"]) else None
         records.append({
-            "name":      r["station_name"],
-            "actual":    int(r["actual_ridership"]),
-            "predicted": int(r["oof_predicted_ridership"]),
-            "ratio":     float(ratio) if ratio is not None else None,
-            "label":     label,
-            "color":     color,
-            "radius":    float(r["radius"]),
-            "lat":       round(float(r["lat"]), 5),
-            "lon":       round(float(r["lon"]), 5),
+            "name":               r["station_name"],
+            "actual":             int(r["actual_ridership"]),
+            "predicted":          int(r["oof_predicted_ridership"]),
+            "ratio":              float(ratio) if ratio is not None else None,
+            "label":              label,
+            "color":              color,
+            "radius":             float(r["radius"]),
+            "lat":                round(float(r["lat"]), 5),
+            "lon":                round(float(r["lon"]), 5),
+            "weekly_departures":  round(float(wd), 1) if wd is not None else None,
         })
 
     # Top 20 underserved: predicted >> actual (lowest ratio), min 50k actual
@@ -435,6 +458,55 @@ HTML_TEMPLATE = """\
   .seg-popup-route { font-size: 11px; color: #64748b; margin-bottom: 8px; font-style: italic; }
   .seg-popup-row   { font-size: 11px; display: flex; justify-content: space-between; gap: 16px; margin: 2px 0; color: #94a3b8; }
   .seg-popup-row span:last-child { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #e2e8f0; }
+
+  .slider-section {
+    margin-top: 10px; padding-top: 8px; border-top: 1px solid #334155;
+  }
+  .slider-label { font-size: 11px; color: #64748b; margin-bottom: 4px; }
+  .slider-label span { font-family: 'JetBrains Mono', monospace; color: #e2e8f0; }
+  .trip-slider { width: 100%; accent-color: #1d4ed8; cursor: pointer; }
+  .slider-result { font-size: 12px; margin-top: 6px; color: #94a3b8; }
+  .slider-result span { font-family: 'JetBrains Mono', monospace; color: #22c55e; font-weight: 600; }
+
+  /* ── Top pairs panel ────────────────────────────────────────────────────── */
+  #pairs-panel {
+    position: absolute; top: 110px; left: 14px; z-index: 1000;
+    width: 310px;
+    background: rgba(15,23,41,0.96); border: 1px solid #1e293b;
+    border-radius: 10px; backdrop-filter: blur(8px);
+    display: flex; flex-direction: column; max-height: calc(100vh - 140px);
+  }
+  #pairs-header {
+    padding: 10px 14px 8px; border-bottom: 1px solid #1e293b;
+    display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
+  }
+  #pairs-header h3 {
+    font-size: 9px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.12em; color: #475569;
+  }
+  #pairs-toggle {
+    font-size: 10px; color: #475569; cursor: pointer; background: none;
+    border: none; font-family: inherit; padding: 0; line-height: 1;
+  }
+  #pairs-toggle:hover { color: #94a3b8; }
+  #pairs-body { overflow-y: auto; padding: 6px 0; }
+  #pairs-body.collapsed { display: none; }
+
+  .pair-row {
+    padding: 7px 14px; cursor: pointer; border-bottom: 1px solid #0f172a;
+    transition: background 0.1s;
+  }
+  .pair-row:hover { background: #1e293b; }
+  .pair-row:last-child { border-bottom: none; }
+  .pair-rank { font-size: 9px; color: #334155; font-family: 'JetBrains Mono', monospace; float: right; margin-top: 1px; }
+  .pair-cities { font-size: 12px; font-weight: 600; color: #e2e8f0; margin-bottom: 3px; }
+  .pair-cities .arrow { color: #334155; margin: 0 4px; }
+  .pair-meta { font-size: 10px; color: #475569; display: flex; gap: 10px; }
+  .pair-meta .score { font-family: 'JetBrains Mono', monospace; }
+  .pair-meta .score.red    { color: #ef4444; }
+  .pair-meta .score.orange { color: #f97316; }
+  .pair-meta .score.yellow { color: #eab308; }
+  .pair-route { font-size: 10px; color: #334155; margin-top: 2px; font-style: italic; }
 </style>
 </head>
 <body>
@@ -456,6 +528,14 @@ HTML_TEMPLATE = """\
 </div>
 
 <div id="map"></div>
+
+<div id="pairs-panel">
+  <div id="pairs-header">
+    <h3>Top 20 City Pairs for Increased Service</h3>
+    <button id="pairs-toggle">&#x25BC;</button>
+  </div>
+  <div id="pairs-body"></div>
+</div>
 
 <div id="legend">
   <div class="legend-section">
@@ -479,9 +559,29 @@ HTML_TEMPLATE = """\
 </div>
 
 <script>
-const SEGMENTS = __SEGMENTS_JSON__;
-const STATIONS = __STATIONS_JSON__;
-const TOP20    = new Set(__TOP20_JSON__);
+const SEGMENTS  = __SEGMENTS_JSON__;
+const STATIONS  = __STATIONS_JSON__;
+const TOP20     = new Set(__TOP20_JSON__);
+const WD_SHAPE  = __WD_SHAPE_JSON__;  // {bins: [...], scores: [...]}
+
+// ── Shape function lookup ─────────────────────────────────────────────────────
+// Find the shape score for a given weekly_departures value by binary search.
+function wdShapeScore(trips) {
+  const bins = WD_SHAPE.bins;
+  const scores = WD_SHAPE.scores;
+  if (!bins.length) return 0;
+  if (trips <= bins[0]) return scores[0];
+  if (trips >= bins[bins.length - 1]) return scores[scores.length - 1];
+  // Binary search for the right bin
+  let lo = 0, hi = bins.length - 1;
+  while (lo < hi - 1) {
+    const mid = (lo + hi) >> 1;
+    if (bins[mid] <= trips) lo = mid; else hi = mid;
+  }
+  // Linear interpolation between lo and hi
+  const t = (trips - bins[lo]) / (bins[hi] - bins[lo]);
+  return scores[lo] + t * (scores[hi] - scores[lo]);
+}
 
 function scoreColor(s) {
   if (s == null) return '#334155';
@@ -554,6 +654,21 @@ STATIONS.forEach(s => {
 
   const labelBg     = dotColor + '22';
   const labelBorder = dotColor + '66';
+
+  const hasWd = s.weekly_departures != null;
+  const sliderMin = 7;
+  const sliderMax = hasWd ? Math.ceil(Math.max(500, s.weekly_departures) / 7) * 7 : 500;
+  const sliderId = 'wd-' + s.lat.toFixed(4).replace('.','') + s.lon.toFixed(4).replace('.','');
+
+  const sliderHtml = hasWd ? `
+    <div class="slider-section">
+      <div class="slider-label">Weekly departures: <span id="${sliderId}-val">${Math.round(s.weekly_departures)}</span></div>
+      <input class="trip-slider" type="range" id="${sliderId}"
+        min="${sliderMin}" max="${sliderMax}" step="7"
+        value="${Math.round(s.weekly_departures)}">
+      <div class="slider-result">Est. ridership: <span id="${sliderId}-out">${s.actual.toLocaleString()}</span></div>
+    </div>` : '';
+
   marker.bindPopup(`
     <div class="popup-name">${s.name}</div>
     <div class="popup-row"><span>Annual ridership</span><span>${s.actual.toLocaleString()}</span></div>
@@ -561,7 +676,28 @@ STATIONS.forEach(s => {
     <div class="popup-label" style="color:${dotColor};background:${labelBg};border:1px solid ${labelBorder}">
       ${isSuppressed ? s.label + ' \u00b7 suppressed demand' : s.label}
     </div>
-  `, { maxWidth: 240, minWidth: 200 });
+    ${sliderHtml}
+  `, { maxWidth: 260, minWidth: 220 });
+
+  if (hasWd) {
+    marker.on('popupopen', () => {
+      const slider = document.getElementById(sliderId);
+      const valEl  = document.getElementById(sliderId + '-val');
+      const outEl  = document.getElementById(sliderId + '-out');
+      if (!slider) return;
+
+      const baseScore = wdShapeScore(s.weekly_departures);
+      const logActual = Math.log1p(s.actual);
+
+      slider.addEventListener('input', () => {
+        const newTrips = Number(slider.value);
+        valEl.textContent = newTrips;
+        const delta = wdShapeScore(newTrips) - baseScore;
+        const newRidership = Math.round(Math.expm1(logActual + delta));
+        outEl.textContent = newRidership.toLocaleString();
+      });
+    });
+  }
 
   marker._stationData = s;
   allMarkers.push(marker);
@@ -609,6 +745,68 @@ document.querySelectorAll('.filter-btn[data-seg]').forEach(btn => {
     applySegmentFilter(btn.dataset.seg);
   });
 });
+
+// ── Top 20 city pairs panel ───────────────────────────────────────────────────
+(function buildPairsPanel() {
+  // Deduplicate segments by unordered station pair, keep lowest score per pair.
+  const best = new Map();
+  SEGMENTS.forEach(s => {
+    if (s.score == null) return;
+    const key = [s.from, s.to].sort().join('|||');
+    if (!best.has(key) || s.score < best.get(key).score) best.set(key, s);
+  });
+
+  // Sort ascending by score (most underserved first), take top 20.
+  const top20 = Array.from(best.values())
+    .sort((a, b) => a.score - b.score)
+    .slice(0, 20);
+
+  function scoreClass(sc) {
+    if (sc < 0.33) return 'red';
+    if (sc < 0.5)  return 'orange';
+    return 'yellow';
+  }
+
+  function shortCity(name) {
+    // "Springfield, MA" → "Springfield" — strip state suffix for compactness
+    return name.split(',')[0].trim();
+  }
+
+  const body = document.getElementById('pairs-body');
+  top20.forEach((s, i) => {
+    const div = document.createElement('div');
+    div.className = 'pair-row';
+    div.innerHTML = `
+      <span class="pair-rank">#${i + 1}</span>
+      <div class="pair-cities">
+        ${shortCity(s.from)}<span class="arrow">&#x2192;</span>${shortCity(s.to)}
+      </div>
+      <div class="pair-meta">
+        <span class="score ${scoreClass(s.score)}">${s.score.toFixed(2)}× ratio</span>
+        <span>${s.trips} trips/wk</span>
+      </div>
+      <div class="pair-route">${s.route}</div>`;
+
+    // Clicking a row flies the map to the midpoint of the segment's coords
+    div.addEventListener('click', () => {
+      const lats = s.coords.map(c => c[0]);
+      const lons = s.coords.map(c => c[1]);
+      const midLat = (Math.min(...lats) + Math.max(...lats)) / 2;
+      const midLon = (Math.min(...lons) + Math.max(...lons)) / 2;
+      map.setView([midLat, midLon], 9, { animate: true });
+    });
+
+    body.appendChild(div);
+  });
+
+  // Collapse toggle
+  const toggle = document.getElementById('pairs-toggle');
+  const panelBody = document.getElementById('pairs-body');
+  toggle.addEventListener('click', () => {
+    const collapsed = panelBody.classList.toggle('collapsed');
+    toggle.textContent = collapsed ? '\u25B6' : '\u25BC';
+  });
+})();
 </script>
 </body>
 </html>
@@ -632,16 +830,23 @@ def main():
     for rec in station_records:
         rec["min_trips"] = station_min_trips.get(rec["name"])
 
+    # Load weekly_departures shape function for what-if slider
+    wd_shape = load_weekly_departures_shape()
+    print(f"  Loaded weekly_departures shape: {len(wd_shape['bins'])} bins "
+          f"(range {wd_shape['bins'][0]}–{wd_shape['bins'][-1]} trips/wk)")
+
     # Serialise to JSON
     segments_json = json.dumps(segments, separators=(",", ":"))
     stations_json = json.dumps(station_records, separators=(",", ":"))
     top20_json    = json.dumps(top20, separators=(",", ":"))
+    wd_shape_json = json.dumps(wd_shape, separators=(",", ":"))
 
     html = (
         HTML_TEMPLATE
         .replace("__SEGMENTS_JSON__", segments_json)
         .replace("__STATIONS_JSON__", stations_json)
         .replace("__TOP20_JSON__",    top20_json)
+        .replace("__WD_SHAPE_JSON__", wd_shape_json)
     )
 
     OUT.parent.mkdir(parents=True, exist_ok=True)
