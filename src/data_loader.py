@@ -82,8 +82,6 @@ ALL_FEATURES = BINARY_IPCD_FEATURES + NUMERIC_V0_FEATURES + CATEGORICAL_FEATURES
 
 TARGET = "annual_ridership"
 
-HOLDOUT_CODES = {"WAS", "BOS", "PHL", "CHI"}
-
 
 # ── Loader ────────────────────────────────────────────────────────────────────
 
@@ -95,7 +93,6 @@ def load_stations(path: Optional[Path] = None) -> pd.DataFrame:
     - All v0 features, NaN-filled where appropriate
     - All GTFS features (NaN for stations without GTFS coverage)
     - `log_ridership` column (log1p of annual_ridership)
-    - `is_holdout` flag for the four major validation stations
     """
     if path is None:
         path = PROCESSED / "stations.csv"
@@ -140,12 +137,6 @@ def load_stations(path: Optional[Path] = None) -> pd.DataFrame:
     if TARGET in df.columns:
         df["log_ridership"] = np.log1p(df[TARGET])
 
-    # ── Hold-out flag (matched on station code) ──
-    if "code" in df.columns:
-        df["is_holdout"] = df["code"].isin(HOLDOUT_CODES).astype(int)
-    else:
-        df["is_holdout"] = 0
-
     # ── GTFS features: leave NaN for stations with no GTFS data (EBM handles missing) ──
     for col in GTFS_FEATURES:
         if col not in df.columns:
@@ -181,25 +172,9 @@ def get_feature_matrix(df: pd.DataFrame,
     return df[available].copy()
 
 
-def get_train_test_split(df: pd.DataFrame):
-    """
-    Split into train set (is_holdout == 0, annual_ridership not null)
-    and holdout set (is_holdout == 1).
-    """
-    has_ridership = df["annual_ridership"].notna()
-    train = df[has_ridership & (df["is_holdout"] == 0)].copy()
-    holdout = df[has_ridership & (df["is_holdout"] == 1)].copy()
-    return train, holdout
-
-
 if __name__ == "__main__":
     df = load_stations()
     print(f"Loaded {len(df)} stations")
     print(f"Columns: {df.columns.tolist()}")
-    train, holdout = get_train_test_split(df)
-    print(f"Train: {len(train)}, Holdout: {len(holdout)}")
-    print("\nHoldout stations:")
-    name_col = "station_name" if "station_name" in holdout.columns else "map_station"
-    print(holdout[[name_col, "annual_ridership"]].to_string(index=False))
     print("\nFeature null counts:")
     print(df[ALL_FEATURES].isna().sum().to_string())
