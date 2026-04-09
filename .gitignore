@@ -186,3 +186,4 @@ models/*.pkl
 results/shape_functions/*.png
 
 .DS_Store
+results/.DS_Store
