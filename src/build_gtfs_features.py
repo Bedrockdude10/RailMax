@@ -12,6 +12,10 @@ Uses ALL service patterns (not just Mon–Fri) so tri-weekly routes like
 the Sunset Limited and Cardinal are included.  Departure/trip counts
 are expressed per week using the sum of days_per_week from calendar.txt.
 
+Also computes is_northeast_corridor: 1 if the station is served by Acela
+or Northeast Regional (the two routes that run the Washington–Boston spine).
+This replaces the old geographic bounding-box approach.
+
 Run directly:
     python src/build_gtfs_features.py
 """
@@ -269,6 +273,15 @@ def match_stops_to_stations(feat_df: pd.DataFrame, stations: pd.DataFrame) -> pd
     return feat_df
 
 
+# Routes that operate on NEC trackage (Washington D.C. → Boston).
+# Stations served by any of these are flagged is_northeast_corridor=1.
+# Using explicit route membership is more precise than a geographic bounding
+# box, which catches non-NEC lines like the Keystone and Adirondack.
+NEC_ROUTE_IDS = {
+    40751,  # Acela
+    88,     # Northeast Regional
+}
+
 GTFS_FEATURE_COLS = [
     "weekly_departures",
     "num_routes_served",
@@ -283,10 +296,13 @@ GTFS_FEATURE_COLS = [
 ]
 
 
-def join_to_stations(feat_df: pd.DataFrame, stations: pd.DataFrame) -> pd.DataFrame:
+
+def join_to_stations(feat_df: pd.DataFrame, stations: pd.DataFrame,
+                     trips_filt: pd.DataFrame, st_filt: pd.DataFrame) -> pd.DataFrame:
     """
     Aggregate per-station (some GTFS stops may map to the same station),
-    then left-join onto stations.csv.
+    then left-join onto stations.csv.  Also computes is_northeast_corridor
+    from GTFS route membership.
     """
     matched = feat_df[feat_df["matched_code"].notna()].copy()
 
@@ -302,13 +318,31 @@ def join_to_stations(feat_df: pd.DataFrame, stations: pd.DataFrame) -> pd.DataFr
     station_feats = matched.groupby("matched_code").agg(agg_rules).reset_index()
     station_feats = station_feats.rename(columns={"matched_code": "code"})
 
+    # ── NEC flag from GTFS route membership ──
+    nec_trip_ids = set(trips_filt[trips_filt["route_id"].isin(NEC_ROUTE_IDS)]["trip_id"])
+    nec_stop_ids = set(st_filt[st_filt["trip_id"].isin(nec_trip_ids)]["stop_id"])
+    nec_codes = set(
+        matched[matched["stop_id"].isin(nec_stop_ids)]["matched_code"]
+    )
+    station_feats["is_northeast_corridor"] = (
+        station_feats["code"].isin(nec_codes).astype(int)
+    )
+    nec_count = station_feats["is_northeast_corridor"].sum()
+    print(f"  NEC stations (by route membership): {nec_count}")
+
     # Drop old GTFS columns from stations if they exist (re-running script)
-    for col in GTFS_FEATURE_COLS:
+    all_gtfs_cols = GTFS_FEATURE_COLS + ["is_northeast_corridor"]
+    for col in all_gtfs_cols:
         if col in stations.columns:
             stations = stations.drop(columns=[col])
 
-    merged = stations.merge(station_feats[["code"] + GTFS_FEATURE_COLS],
-                            on="code", how="left")
+    merged = stations.merge(
+        station_feats[["code"] + GTFS_FEATURE_COLS + ["is_northeast_corridor"]],
+        on="code", how="left",
+    )
+    # Stations with no GTFS match get is_northeast_corridor=0
+    merged["is_northeast_corridor"] = merged["is_northeast_corridor"].fillna(0).astype(int)
+
     filled = merged[GTFS_FEATURE_COLS].notna().all(axis=1).sum()
     print(f"\nJoined GTFS features to {filled}/{len(merged)} stations.")
     return merged
@@ -332,7 +366,7 @@ def main():
     print("\nSample matches:")
     print(sample.to_string(index=False))
 
-    merged = join_to_stations(feat_df, stations)
+    merged = join_to_stations(feat_df, stations, trips_filt, st_filt)
 
     out_path = PROCESSED / "stations.csv"
     merged.to_csv(out_path, index=False)

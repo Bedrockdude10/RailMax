@@ -5,7 +5,6 @@ Compute engineered features for the stations DataFrame:
   - metro_pop: population of the nearest US city within 50 km
   - distance_to_nearest_major_city_km: Haversine to nearest city with pop > 500k
   - num_nearby_stations: count of other Amtrak TRAIN stations within 80 km
-  - is_northeast_corridor: binary flag for NEC bounding box
 
 Expects stations.csv produced by parse_and_join.py.
 Writes an updated stations.csv in place (adds columns).
@@ -21,9 +20,6 @@ from config import (
     METRO_POP_FALLBACK_KM,
     MAJOR_CITY_POP_THRESHOLD,
     NEARBY_STATIONS_RADIUS_KM,
-    NEC_LAT_MIN,
-    NEC_LAT_MAX,
-    NEC_LON_MIN,
 )
 from utils import haversine_km
 
@@ -128,17 +124,6 @@ def add_num_nearby_stations(stations: pd.DataFrame,
     return stations
 
 
-def add_is_northeast_corridor(stations: pd.DataFrame) -> pd.DataFrame:
-    """Binary flag: 1 if station is within the NEC bounding box."""
-    stations = stations.copy()
-    stations["is_northeast_corridor"] = (
-        (stations["lat"] >= NEC_LAT_MIN)
-        & (stations["lat"] <= NEC_LAT_MAX)
-        & (stations["lon"] >= NEC_LON_MIN)
-    ).astype(int)
-    return stations
-
-
 # ── Main ───────────────────────────────────────────────────────────────────────
 
 def compute_all_features(stations: pd.DataFrame,
@@ -151,9 +136,6 @@ def compute_all_features(stations: pd.DataFrame,
 
     print("  Computing num_nearby_stations …")
     stations = add_num_nearby_stations(stations)
-
-    print("  Computing is_northeast_corridor …")
-    stations = add_is_northeast_corridor(stations)
 
     return stations
 
@@ -180,9 +162,8 @@ def main():
     print(f"\nUpdated {in_path} with engineered features")
 
     feature_cols = ["metro_pop", "distance_to_nearest_major_city_km",
-                    "num_nearby_stations", "is_northeast_corridor"]
+                    "num_nearby_stations"]
     print(stations[feature_cols].describe().to_string())
-    print(f"\nNEC stations: {stations['is_northeast_corridor'].sum()}")
 
 
 if __name__ == "__main__":

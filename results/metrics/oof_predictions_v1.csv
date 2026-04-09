@@ -1,525 +1,525 @@
 code,station,actual_ridership,oof_predicted_ridership,pct_error
-ABE,"Aberdeen, MD",53357,47564,-10.9
-ABQ,"Albuquerque, NM",58918,37988,-35.5
-ACA,"Antioch-Pittsburg, CA",35666,19341,-45.8
-ACD,"Arcadia, MO",1305,2658,103.6
-ADM,"Ardmore, OK",6552,1776,-72.9
-AKY,"Ashland, KY",1792,4194,134.0
-ALB,"Albany-Rensselaer, NY",920779,491363,-46.6
-ALC,"Alliance, OH",4580,2115,-53.8
-ALD,"Alderson, WV",466,1449,211.1
-ALI,"Albion, MI",2667,10450,291.7
-ALN,"Alton, IL",75548,30498,-59.6
-ALP,"Alpine, TX",4206,7755,84.3
-ALT,"Altoona, PA",22163,16159,-27.1
-ALX,"Alexandria, VA",372327,364983,-2.0
-ALY,"Albany, OR",46161,40588,-12.1
-AMS,"Amsterdam, NY",13737,11876,-13.5
-ANA,"Anaheim, CA",207869,106024,-49.0
-ARB,"Ann Arbor, MI",150296,55535,-63.0
-ARD,"Ardmore, PA",80899,52320,-35.3
-ARK,"Arkadelphia, AR",1292,6931,436.5
-ARN,"Auburn, CA",9348,21004,124.7
-ASD,"Ashland, VA",42110,31740,-24.6
-ATL,"Atlanta, GA",85039,23483,-72.4
-ATN,"Anniston, AL",4338,3748,-13.6
-AUS,"Austin, TX",47029,66521,41.4
-BAL,"Baltimore, MD",1333185,1624280,21.8
-BAM,"Bangor, MI",4037,5551,37.5
-BAR,"Barstow, CA",3299,14083,326.8
-BAS,"Bay Saint Louis, MS",2310,2280,-1.3
-BBY,"Boston, MA",894547,496665,-44.5
-BCV,"Burke Centre, VA",14720,7729,-47.5
-BEL,"Bellingham, WA",66526,47710,-28.3
-BEN,"Benson, AZ",2195,3302,50.4
-BER,"Berlin, CT",34926,48769,39.6
-BFD,"Bakersfield, CA",376352,66236,-82.4
-BFX,"Buffalo, NY",51268,66714,30.1
-BHM,"Birmingham, AL",39492,16839,-57.4
-BIX,"Biloxi, MS",3009,2273,-24.5
-BKY,"Berkeley, CA",99352,85106,-14.3
-BLF,"Bellows Falls, VT",5388,14788,174.5
-BMT,"Beaumont, TX",3224,3604,11.8
-BNC,"Burlington, NC",32695,22679,-30.6
-BNG,"Bingen-White Salmon, WA",3455,5800,67.9
-BNL,"Bloomington-Normal, IL",230447,65836,-71.4
-BON,"Boston, MA",447961,354047,-21.0
-BOS,"Boston, MA",1884275,730070,-61.3
-BRA,"Brattleboro, VT",16682,9826,-41.1
-BRH,"Brookhaven, MS",3491,4718,35.1
-BRK,"Brunswick, ME",82812,112581,35.9
-BRL,"Burlington, IA",6845,11511,68.2
-BRO,"Browning, MT",1202,2065,71.7
-BRP,"Bridgeport, CT",141022,112864,-20.0
-BTL,"Battle Creek, MI",28930,62761,116.9
-BTN,"Burlington, VT",26476,16654,-37.1
-BUF,"Buffalo, NY",113519,121304,6.9
-BUR,"Burbank, CA",68774,79471,15.6
-BWI,"BWI Marshall Airport, MD",911275,575163,-36.9
-BYN,"Bryan, OH",5305,3297,-37.9
-CAM,"Camden, SC",3217,4068,26.5
-CBR,"Cleburne, TX",4191,4768,13.8
-CBS,"Columbus, WI",23503,15353,-34.7
-CDL,"Carbondale, IL",82122,111811,36.2
-CEN,"Centralia, IL",17638,19160,8.6
-CHI,"Chicago, IL",3175856,1225897,-61.4
-CHM,"Champaign-Urbana, IL",254995,72150,-71.7
-CHS,"Charleston, SC",72041,53740,-25.4
-CHW,"Charleston, WV",7166,6097,-14.9
-CIC,"Chico, CA",9749,5035,-48.3
-CIN,"Cincinnati, OH",10846,22151,104.2
-CLA,"Claremont, NH",3308,3950,19.4
-CLB,"Columbia, SC",31084,15648,-49.7
-CLE,"Cleveland, OH",61684,77499,25.6
-CLF,"Clifton Forge, VA",2178,2951,35.5
-CLP,"Culpeper, VA",21371,29214,36.7
-CLT,"Charlotte, NC",365614,434317,18.8
-CML,"Camarillo, CA",52903,23761,-55.1
-CMO,"Chemult, OR",2609,2370,-9.2
-CNV,"Castleton, VT",3041,8313,173.3
-COC,"Corcoran, CA",23631,25935,9.7
-COI,"Connersville, IN",725,1477,103.5
-COT,"Coatesville, PA",15219,18749,23.2
-COV,"Connellsville, PA",4022,1932,-52.0
-COX,"Colfax, CA",6615,13400,102.6
-CPN,"Carpinteria, CA",27105,42860,58.1
-CRF,"Crawfordsville, IN",1928,3266,69.4
-CRN,"Creston, IA",2174,3239,49.0
-CRT,"Croton-Harmon, NY",61926,98883,59.7
-CRV,"Carlinville, IL",9348,17951,92.0
-CSN,"Clemson, SC",4416,13057,195.7
-CTL,"Centralia, WA",32166,53326,65.8
-CUM,"Cumberland, MD",9403,14373,52.8
-CUT,"Cut Bank, MT",1256,8336,563.2
-CVS,"Charlottesville, VA",199357,148444,-25.5
-CWH,"Cornwells Heights, PA",3011,8160,170.9
-CWT,"Chatsworth, CA",58787,43931,-25.3
-CYN,"Cary, NC",144942,11555,-92.0
-DAL,"Dallas, TX",61939,70383,13.6
-DAN,"Danville, VA",8324,10638,27.8
-DAV,"Davis, CA",275353,366098,33.0
-DDG,"Dodge City, KS",4681,4727,1.0
-DEM,"Deming, NM",1523,3117,104.7
-DEN,"Denver, CO",151914,50474,-66.8
-DER,"Dearborn, MI",67714,42959,-36.6
-DET,"Detroit, MI",74609,64392,-13.7
-DFB,"Deerfield Beach, FL",20915,28207,34.9
-DHM,"Durham, NH",48248,96344,99.7
-DIL,"Dillon, SC",7116,2632,-63.0
-DLB,"Delray Beach, FL",13830,18327,32.5
-DLD,"DeLand, FL",19366,28915,49.3
-DLK,"Detroit Lakes, MN",4724,9270,96.2
-DNC,"Durham, NC",154792,122763,-20.7
-DNK,"Denmark, SC",2858,8057,181.9
-DOA,"Dowagiac, MI",5165,10904,111.1
-DOV,"Dover, NH",57771,41227,-28.6
-DOW,"Downingtown, PA",60830,51554,-15.2
-DQN,"Du Quoin, IL",6908,5399,-21.9
-DRD,"Durand, MI",11579,8461,-26.9
-DRT,"Del Rio, TX",2147,1395,-35.0
-DUN,"Dunsmuir, CA",3794,3528,-7.0
-DVL,"Devils Lake, ND",3431,5293,54.3
-DWT,"Dwight, IL",4964,7221,45.5
-DYE,"Dyer, IN",1331,1696,27.5
-EDM,"Edmonds, WA",27887,40828,46.4
-EFG,"Effingham, IL",22775,19195,-15.7
-EKH,"Elkhart, IN",20541,7669,-62.7
-ELK,"Elko, NV",7058,7773,10.1
-ELP,"El Paso, TX",14676,28274,92.7
-ELT,"Elizabethtown, PA",58311,108250,85.6
-ELY,"Elyria, OH",13135,23227,76.8
-EMY,"Emeryville, CA",444450,366866,-17.5
-EPH,"Ephrata, WA",3727,5470,46.8
-ERI,"Erie, PA",18294,15243,-16.7
-ESM,"Essex, MT",1005,2459,144.7
-ESX,"Essex Junction, VT",17452,14147,-18.9
-EUG,"Eugene, OR",120102,131676,9.6
-EVR,"Everett, WA",38289,59051,54.2
-EWR,"Newark, NJ",201750,257750,27.8
-EXR,"Exeter, NH",69061,21531,-68.8
-EXT,"Exton, PA",143463,131638,-8.2
-FAR,"Fargo, ND",17709,22061,24.6
-FAY,"Fayetteville, NC",57742,39327,-31.9
-FBG,"Fredericksburg, VA",114796,40100,-65.1
-FED,"Fort Edward-Glens Falls, NY",8589,5099,-40.6
-FFV,"Fairfield-Vacaville, CA",74502,32632,-56.2
-FLG,"Flagstaff, AZ",31693,26390,-16.7
-FLN,"Flint, MI",27858,20482,-26.5
-FLO,"Florence, SC",41695,17310,-58.5
-FMD,"Fort Madison, IA",5940,6895,16.1
-FMG,"Fort Morgan, CO",3623,3748,3.5
-FMT,"Fremont, CA",32780,84213,156.9
-FNO,"Fresno, CA",302753,98592,-67.4
-FRA,"Framingham, MA",1320,15144,1046.4
-FRE,"Freeport, ME",32176,39722,23.5
-FTC,"Ticonderoga, NY",1750,2523,44.2
-FTL,"Fort Lauderdale, FL",45989,28778,-37.4
-FTN,"Fulton, KY",4547,3779,-16.9
-FTW,"Fort Worth, TX",136888,113117,-17.4
-FUL,"Fullerton, CA",240141,107466,-55.2
-GAC,"Santa Clara, CA",83286,57215,-31.3
-GAS,"Gastonia, NC",2146,4976,131.9
-GBB,"Galesburg, IL",71850,37208,-48.2
-GCK,"Garden City, KS",6516,6612,1.5
-GDL,"Glendale, CA",53488,59241,10.8
-GFD,"Greenfield, MA",13290,80161,503.1
-GFK,"Grand Forks, ND",11036,6569,-40.5
-GGW,"Glasgow, MT",3052,3154,3.3
-GJT,"Grand Junction, CO",27402,21372,-22.0
-GLE,"Gainesville, TX",7032,5937,-15.6
-GLM,"Gilman, IL",2171,4085,88.1
-GLN,"Glenview, IL",57752,72395,25.4
-GLP,"Gallup, NM",13568,1215,-91.0
-GNB,"Greensburg, PA",12784,11943,-6.6
-GNS,"Gainesville, GA",4743,10559,122.6
-GPK,"East Glacier Park, MT",10996,3672,-66.6
-GRA,"Granby, CO",3682,8627,134.3
-GRI,"Green River, UT",2551,1183,-53.6
-GRO,"Greensboro, NC",210652,130214,-38.2
-GRR,"Grand Rapids, MI",46664,50675,8.6
-GRV,"Greenville, SC",8802,14121,60.4
-GSC,"Glenwood Springs, CO",42840,17808,-58.4
-GTA,"Goleta, CA",86987,55702,-36.0
-GUA,"Guadalupe, CA",12287,55397,350.9
-GUF,"Gulfport, MS",2278,2615,14.8
-GVB,"Grover Beach, CA",14563,24932,71.2
-GWD,"Greenwood, MS",13794,5025,-63.6
-HAM,"Hamlet, NC",4082,4031,-1.3
-HAR,"Harrisburg, PA",357524,415181,16.1
-HAS,"Hastings, NE",4089,4149,1.5
-HAV,"Havre, MT",7590,4540,-40.2
-HAY,"Hayward, CA",36947,22701,-38.6
-HAZ,"Hazlehurst, MS",1516,2073,36.7
-HBG,"Hattiesburg, MS",10530,7493,-28.8
-HEM,"Hermann, MO",27305,6958,-74.5
-HER,"Helper, UT",2302,4248,84.6
-HFD,"Hartford, CT",226312,327073,44.5
-HFY,"Harpers Ferry, WV",8427,4481,-46.8
-HGD,"Huntingdon, PA",5586,10973,96.4
-HHL,"Haverhill, MA",31123,39305,26.3
-HIN,"Hinton, WV",2514,3320,32.1
-HLD,"Holdrege, NE",1760,1579,-10.3
-HLK,"Holyoke, MA",2698,41316,1431.4
-HMD,"Hammond, LA",10108,7982,-21.0
-HMI,"Hammond-Whiting, IN",4639,14249,207.2
-HMW,"Homewood, IL",46211,34702,-24.9
-HNF,"Hanford, CA",121136,33833,-72.1
-HOL,"Hollywood, FL",24706,36541,47.9
-HOM,"Holland, MI",32774,31177,-4.9
-HOP,"Hope, AR",1766,2908,64.6
-HOS,"Houston, TX",22920,27880,21.6
-HPT,"High Point, NC",43391,67189,54.8
-HUD,"Hudson, NY",274515,96203,-65.0
-HUN,"Huntington, WV",4489,7762,72.9
-HUT,"Hutchinson, KS",4125,7858,90.5
-IDP,"Independence, MO",6875,14543,111.5
-IND,"Indianapolis, IN",12655,34459,172.3
-IRV,"Irvine, CA",244373,117202,-52.0
-JAN,"Jackson, MS",38187,17083,-55.3
-JAX,"Jacksonville, FL",94914,55227,-41.8
-JEF,"Jefferson City, MO",41916,7514,-82.1
-JOL,"Joliet, IL",69420,30651,-55.8
-JSP,"Jesup, GA",9164,8189,-10.6
-JST,"Johnstown, PA",20436,9405,-54.0
-JXN,"Jackson, MI",18371,26757,45.7
-KAL,"Kalamazoo, MI",84042,80879,-3.8
-KAN,"Kannapolis, NC",41333,29432,-28.8
-KCY,"Kansas City, MO",164809,150036,-9.0
-KEE,"Kewanee, IL",13172,6705,-49.1
-KEL,"Kelso-Longview, WA",38914,34625,-11.0
-KFS,"Klamath Falls, OR",26102,14209,-45.6
-KIN,"Kingston, RI",213016,145278,-31.8
-KIS,"Kissimmee, FL",35006,41411,18.3
-KKI,"Kankakee, IL",18244,21281,16.7
-KNG,"Kingman, AZ",9775,13212,35.2
-KTR,"Kingstree, SC",10184,11431,12.3
-KWD,"Kirkwood, MO",59959,29302,-51.1
-LAB,"Latrobe, PA",3420,5817,70.1
-LAF,"Lafayette, IN",4842,17671,265.0
-LAG,"La Grange, IL",9128,14587,59.8
-LAJ,"La Junta, CO",6246,5839,-6.5
-LAK,"Lakeland, FL",22038,10173,-53.8
-LAP,"La Plata, MO",10492,6073,-42.1
-LAU,"Laurel, MS",6281,5474,-12.9
-LAX,"Los Angeles, CA",1066614,713886,-33.1
-LCH,"Lake Charles, LA",3656,5551,51.9
-LCN,"Lincoln, IL",18239,26645,46.1
-LDB,"Lordsburg, NM",908,2546,180.2
-LEE,"Lee's Summit, MO",30451,7021,-76.9
-LEW,"Lewistown, PA",12494,5194,-58.4
-LEX,"Lexington Barbeque Festival, NC",706,9301,1217.4
-LFT,"Lafayette, LA",5169,14982,189.8
-LIB,"Libby, MT",4284,5747,34.1
-LMR,"Lamar, CO",1406,2201,56.6
-LMY,"Lamy, NM",7169,6571,-8.3
-LNC,"Lancaster, PA",458298,208516,-54.5
-LNK,"Lincoln, NE",11798,29459,149.7
-LNS,"East Lansing, MI",73894,37508,-49.2
-LOD,"Lodi, CA",2769,51987,1777.5
-LPE,"Lapeer, MI",8261,9934,20.3
-LPS,"Lompoc-Surf, CA",9625,9971,3.6
-LRC,"Lawrence, KS",8293,14846,79.0
-LRK,"Little Rock, AR",25431,19524,-23.2
-LSE,"La Crosse, WI",39963,23159,-42.0
-LSV,"Las Vegas, NM",4164,3911,-6.1
-LVW,"Longview, TX",27858,5364,-80.7
-LWA,"Leavenworth, WA",12460,2791,-77.6
-LYH,"Lynchburg, VA",79574,121998,53.3
-MAC,"Macomb, IL",40453,9406,-76.7
-MAL,"Malta, MT",5100,2545,-50.1
-MAT,"Mattoon, IL",34319,33489,-2.4
-MAY,"Maysville, KY",2609,3029,16.1
-MBY,"Middlebury, VT",8630,4352,-49.6
-MCB,"McComb, MS",4024,6515,61.9
-MCD,"Merced, CA",135209,16970,-87.4
-MCG,"McGregor, TX",4369,6059,38.7
-MCK,"McCook, NE",3263,2289,-29.8
-MDN,"Meriden, CT",26577,40591,52.7
-MDR,"Madera, CA",25475,19551,-23.3
-MDT,"Mendota, IL",18177,10602,-41.7
-MEI,"Meridian, MS",8932,11072,24.0
-MEM,"Memphis, TN",65940,41300,-37.4
-MET,"Metropark, NJ",368391,621852,68.8
-MHL,"Marshall, TX",14484,19183,32.4
-MIA,"Miami, FL",89463,65384,-26.9
-MID,"Middletown, PA",66251,89681,35.4
-MIN,"Mineola, TX",7422,4205,-43.3
-MJY,"Mount Joy, PA",27539,49480,79.7
-MKA,"Milwaukee Airport-Trains, WI",123946,85901,-30.7
-MKE,"Milwaukee-Downtown, WI",555161,545711,-1.7
-MKS,"Marks, MS",5454,1394,-74.4
-MNG,"Montgomery, WV",618,2592,319.5
-MOD,"Modesto, CA",105596,32364,-69.4
-MOE,"Mobile, AL",12355,4164,-66.3
-MOT,"Minot, ND",18775,10946,-41.7
-MPK,"Moorpark, CA",37744,21635,-42.7
-MPR,"Montpelier-Berlin, VT",8034,7030,-12.5
-MRB,"Martinsburg, WV",9082,8535,-6.0
-MRC,"Maricopa, AZ",14830,14045,-5.3
-MSP,"St. Paul-Minneapolis, MN",199613,170794,-14.4
-MSS,"Manassas, VA",52758,44622,-15.4
-MTP,"Mount Pleasant, IA",9228,3552,-61.5
-MTZ,"Martinez, CA",267796,186181,-30.5
-MVN,"Malvern, AR",2006,3116,55.3
-MVW,"Mount Vernon, WA",15255,23429,53.6
-MYS,"Mystic, CT",48882,17568,-64.1
-NBK,"New Brunswick, NJ",53435,129961,143.2
-NBN,"Newbern-Dyersburg, TN",4008,2741,-31.6
-NBU,"New Buffalo, MI",32571,10835,-66.7
-NCR,"New Carrollton, MD",244905,373119,52.4
-NDL,"Needles, CA",7394,5645,-23.7
-NEW,"Newton, KS",14500,8812,-39.2
-NFK,"Norfolk, VA",224374,47527,-78.8
-NFL,"Niagara Falls, NY",36522,45065,23.4
-NHT,"Northampton, MA",38907,25474,-34.5
-NHV,"New Haven, CT",853266,890073,4.3
-NIB,"New Iberia, LA",1339,1126,-15.9
-NLC,"New London, CT",179875,64967,-63.9
-NLS,"Niles, MI",16259,26804,64.9
-NOL,"New Orleans, LA",188071,140499,-25.3
-NOR,"Norman, OK",13858,5186,-62.6
-NPN,"Newport News, VA",109799,96081,-12.5
-NPV,"Naperville, IL",34737,37992,9.4
-NRG,"Northridge, CA",24363,16427,-32.6
-NRK,"Newark, DE",49510,47383,-4.3
-NRO,"New Rochelle, NY",155000,124659,-19.6
-NSF,"North Carolina State Fair, NC",446,13913,3019.7
-NWK,"Newark, NJ",884002,2078322,135.1
-NYF,"New York State Fair, NY",3820,23387,512.1
-NYP,"New York, NY",13037414,8910717,-31.7
-OAC,"Oakland, CA",24284,72201,197.3
-OKC,"Oklahoma City, OK",57159,26519,-53.6
-OKE,"Okeechobee, FL",4672,3806,-18.5
-OKJ,"Oakland, CA",246498,270523,9.7
-OLT,"San Diego, CA",308805,128569,-58.4
-OLW,"Olympia-Lacey, WA",82518,87303,5.8
-OMA,"Omaha, NE",25946,20497,-21.0
-ONA,"Ontario, CA",4883,3922,-19.7
-ORB,"Old Orchard Beach, ME",17493,13239,-24.3
-ORC,"Oregon City, OR",21923,29322,33.7
-ORL,"Orlando, FL",145056,65960,-54.5
-OSB,"Old Saybrook, CT",87196,29473,-66.2
-OSC,"Osceola, IA",13579,5691,-58.1
-OSD,"Oceanside, CA",211533,244542,15.6
-OTM,"Ottumwa, IA",8548,11045,29.2
-OXN,"Oxnard, CA",92194,141225,53.2
-PAG,"Pascagoula, MS",1029,1958,90.4
-PAK,"Palatka, FL",17241,15112,-12.3
-PAO,"Paoli, PA",243995,206221,-15.5
-PAR,"Parkesburg, PA",27273,31806,16.6
-PBF,"Poplar Bluff, MO",5262,5038,-4.3
-PCT,"Princeton, IL",29017,14193,-51.1
-PDX,"Portland, OR",586257,932388,59.0
-PGH,"Pittsburgh, PA",141146,194763,38.0
-PHL,"Philadelphia, PA",5586174,2264447,-59.5
-PHN,"North Philadelphia, PA",1053,41730,3863.0
-PIC,"Picayune, MS",2507,4380,74.7
-PIT,"Pittsfield, MA",9197,10850,18.0
-PJC,"Princeton Junction, NJ",136236,111629,-18.1
-PLB,"Plattsburgh, NY",10744,4905,-54.3
-PLO,"Plano, IL",5724,6064,5.9
-PNT,"Pontiac, MI",13593,81666,500.8
-POG,"Portage, WI",10162,8611,-15.3
-POH,"Port Henry, NY",1025,4873,375.0
-PON,"Pontiac, IL",14839,20425,37.6
-POR,"Portland, ME",167342,124091,-25.8
-POS,"Pomona, CA",1434,6160,329.6
-POU,"Poughkeepsie, NY",137122,133526,-2.6
-PRB,"Paso Robles, CA",9510,7183,-24.5
-PRC,"Prince, WV",1645,3041,84.9
-PRO,"Provo, UT",8589,9137,6.4
-PSC,"Pasco, WA",19275,11500,-40.3
-PSN,"Palm Springs, CA",1687,3920,132.3
-PTB,"Petersburg, VA",60480,94424,56.1
-PTH,"Port Huron, MI",13555,18287,34.9
-PUR,"Purcell, OK",2015,11980,494.6
-PVD,"Providence, RI",797019,250470,-68.6
-PVL,"Pauls Valley, OK",3259,3055,-6.3
-QAN,"Quantico, VA",20491,42549,107.6
-QCY,"Quincy, IL",29251,26819,-8.3
-RAT,"Raton, NM",9171,7908,-13.8
-RDD,"Redding, CA",8505,5349,-37.1
-RDW,"Red Wing, MN",21666,9878,-54.4
-REN,"Rensselaer, IN",429,2123,393.7
-RGH,"Raleigh, NC",5203,197462,3695.2
-RHI,"Rhinecliff, NY",218942,89745,-59.0
-RIC,"Richmond, CA",202257,106123,-47.5
-RIV,"Riverside, CA",9467,11123,17.5
-RKV,"Rockville, MD",5616,7912,40.9
-RLN,"Rocklin, CA",8911,35783,301.5
-RMT,"Rocky Mount, NC",54383,60742,11.7
-RNK,"Roanoke, VA",105926,11306,-89.3
-RNO,"Reno, NV",62827,41227,-34.4
-ROC,"Rochester, NY",153125,186839,22.0
-ROM,"Rome, NY",12486,27735,122.1
-ROY,"Royal Oak, MI",24855,29293,17.9
-RPH,"Randolph, VT",2932,2445,-16.6
-RSP,"Rouses Point, NY",1276,2034,59.5
-RSV,"Roseville, CA",37156,36859,-0.8
-RTE,"Route 128, MA",568300,120746,-78.8
-RTL,"Rantoul, IL",5865,8740,49.0
-RUD,"Rutland, VT",10536,17721,68.2
-RUG,"Rugby, ND",2806,4113,46.5
-RVM,"Richmond, VA",129928,95425,-26.6
-RVR,"Richmond, VA",506023,214642,-57.6
-SAB,"St. Albans, VT",3953,8548,116.2
-SAC,"Sacramento, CA",764099,690582,-9.6
-SAL,"Salisbury, NC",28674,50011,74.4
-SAN,"San Diego, CA",489961,471326,-3.8
-SAO,"Saco, ME",51816,52077,0.5
-SAR,"Saratoga Springs, NY",36145,39306,8.7
-SAS,"San Antonio, TX",63676,103380,62.4
-SAV,"Savannah, GA",73968,109415,47.9
-SBA,"Santa Barbara, CA",339569,130343,-61.6
-SBG,"Sebring, FL",17805,8138,-54.3
-SBY,"Shelby, MT",7107,6947,-2.2
-SCC,"Santa Clara, CA",40931,16153,-60.5
-SCD,"St. Cloud, MN",8246,11262,36.6
-SCH,"Schriever, LA",1286,2637,105.1
-SDL,"Slidell, LA",6682,8599,28.7
-SDY,"Schenectady, NY",63212,148750,135.3
-SEA,"Seattle, WA",736898,259875,-64.7
-SED,"Sedalia, MO",10275,10149,-1.2
-SIM,"Simi Valley, CA",40002,30338,-24.2
-SJC,"San Jose, CA",156081,481636,208.6
-SJM,"St. Joseph-Benton Harbor, MI",14731,6070,-58.8
-SKN,"Stockton, CA",274639,30514,-88.9
-SKT,"Stockton, CA",5094,28355,456.6
-SKY,"Sandusky, OH",10442,10753,3.0
-SLC,"Salt Lake City, UT",36073,112490,211.8
-SLM,"Salem, OR",59734,49851,-16.5
-SLO,"San Luis Obispo, CA",91555,129954,41.9
-SMC,"San Marcos, TX",10403,17181,65.1
-SMT,"Summit, IL",19729,12006,-39.1
-SNA,"Santa Ana, CA",109989,164138,49.2
-SNB,"San Bernardino, CA",9576,26495,176.7
-SNC,"San Juan Capistrano, CA",162210,142321,-12.3
-SND,"Sanderson, TX",276,1597,476.6
-SNP,"San Clemente Pier, CA",16486,27799,68.6
-SNS,"Salinas, CA",20832,24122,15.8
-SOB,"South Bend, IN",18676,19290,3.3
-SOL,"Solana Beach, CA",202986,92919,-54.2
-SOP,"Southern Pines, NC",7058,10402,47.4
-SPB,"Spartanburg, SC",3706,8373,125.9
-SPG,"Springfield, MA",162613,472818,190.8
-SPI,"Springfield, IL",159998,51891,-67.6
-SPK,"Spokane, WA",37480,52183,39.2
-SPL,"Staples, MN",6691,6860,2.5
-SPM,"South Shore-South Portsmouth, KY",1454,1883,29.5
-SPT,"Sandpoint, ID",5808,3596,-38.1
-SSM,"Selma-Smithfield, NC",17698,15058,-14.9
-STA,"Staunton, VA",5519,10048,82.1
-STL,"St. Louis, MO",395715,746658,88.7
-STM,"Stamford, CT",398958,179079,-55.1
-STN,"Stanley, ND",2660,6067,128.1
-STS,"New Haven, CT",20694,47419,129.1
-STW,"Stanwood, WA",4983,11798,136.7
-SUI,"Suisun-Fairfield, CA",65360,65134,-0.3
-SVT,"Sturtevant, WI",55779,50505,-9.5
-SYR,"Syracuse, NY",161900,133820,-17.3
-TAC,"Tacoma, WA",110754,104176,-5.9
-TAY,"Taylor, TX",6209,3590,-42.2
-TCA,"Toccoa, GA",2095,3596,71.7
-TCL,"Tuscaloosa, AL",10725,22442,109.2
-THN,"Thurmond, WV",593,2012,239.4
-TOH,"Tomah, WI",17997,7225,-59.9
-TOL,"Toledo, OH",46755,32546,-30.4
-TOP,"Topeka, KS",9096,10318,13.4
-TPA,"Tampa, FL",145295,39857,-72.6
-TPL,"Temple, TX",15231,15016,-1.4
-TRE,"Trenton, NJ",442137,1055310,138.7
-TRI,"Trinidad, CO",6917,1307,-81.1
-TRK,"Turlock-Denair, CA",31978,16589,-48.1
-TRM,"Troy, MI",38237,20175,-47.2
-TRU,"Truckee, CA",16496,14025,-15.0
-TUK,"Tukwila, WA",48063,29867,-37.9
-TUS,"Tucson, AZ",25260,61389,143.0
-TXA,"Texarkana, AR",7036,8393,19.3
-TYR,"Tyrone, PA",4416,4628,4.8
-UCA,"Utica, NY",83975,94434,12.5
-VAN,"Vancouver, WA",145649,142553,-2.1
-VEC,"Ventura, CA",79936,38674,-51.6
-VNC,"Van Nuys, CA",67884,124499,83.4
-VRN,"Ferrisburgh-Vergennes, VT",3744,9925,165.0
-VRV,"Victorville, CA",7227,6573,-9.1
-WAB,"Waterbury-Stowe, VT",6273,4818,-23.2
-WAC,"Wasco, CA",23548,21132,-10.3
-WAH,"Washington, MO",17021,14228,-16.4
-WAR,"Warrensburg, MO",11158,19592,75.6
-WAS,"Washington, DC",6010221,2531204,-57.9
-WBG,"Williamsburg, VA",74189,88428,19.2
-WDB,"Woodbridge, VA",37278,19222,-48.4
-WDL,"Wisconsin Dells, WI",24036,10038,-58.2
-WEM,"Wells, ME",63902,51590,-19.3
-WEN,"Wenatchee, WA",12512,15594,24.6
-WFD,"Wallingford, CT",12604,40247,219.3
-WFH,"Whitefish, MT",42766,11197,-73.8
-WGL,"West Glacier, MT",4799,1909,-60.2
-WHL,"Whitehall, NY",1527,2496,63.5
-WIH,"Wishram, WA",1545,3164,104.7
-WIL,"Wilmington, DE",814516,593491,-27.1
-WIN,"Winona, MN",23672,25054,5.8
-WIP,"Fraser-Winter Park, CO",53658,7664,-85.7
-WLN,"Wilson, NC",59186,17260,-70.8
-WLO,"Winslow, AZ",3768,3938,4.5
-WLY,"Westerly, RI",58288,32297,-44.6
-WND,"Windsor, CT",21053,28472,35.2
-WNL,"Windsor Locks, CT",32654,40300,23.4
-WNM,"Windsor-Mt. Ascutney, VT",1666,3643,118.7
-WNN,"Winnemucca, NV",5230,3392,-35.1
-WNR,"Walnut Ridge, AR",4258,2800,-34.2
-WOB,"Woburn, MA",17708,53257,200.8
-WOR,"Worcester, MA",5170,9488,83.5
-WPB,"West Palm Beach, FL",43603,40711,-6.6
-WPK,"Winter Park, FL",25452,74245,191.7
-WPT,"Wolf Point, MT",3307,4020,21.6
-WRJ,"White River Junction, VT",16450,11228,-31.7
-WSP,"Westport, NY",3624,6545,80.6
-WSS,"White Sulphur Springs, WV",6508,1570,-75.9
-WTH,"Winter Haven, FL",30308,25349,-16.4
-WTI,"Waterloo, IN",21177,9200,-56.6
-WTN,"Williston, ND",16555,3330,-79.9
-YAZ,"Yazoo City, MS",3515,2885,-17.9
-YEM,"Yemassee, SC",8911,9393,5.4
-YNY,"Yonkers, NY",47156,50176,6.4
-YUM,"Yuma, AZ",4722,4738,0.4
+ABE,"Aberdeen, MD",53357,51930,-2.7
+ABQ,"Albuquerque, NM",58918,44592,-24.3
+ACA,"Antioch-Pittsburg, CA",35666,7916,-77.8
+ACD,"Arcadia, MO",1305,3820,192.6
+ADM,"Ardmore, OK",6552,1523,-76.8
+AKY,"Ashland, KY",1792,5298,195.7
+ALB,"Albany-Rensselaer, NY",920779,642654,-30.2
+ALC,"Alliance, OH",4580,2896,-36.8
+ALD,"Alderson, WV",466,1706,266.2
+ALI,"Albion, MI",2667,8540,220.1
+ALN,"Alton, IL",75548,33769,-55.3
+ALP,"Alpine, TX",4206,9254,120.0
+ALT,"Altoona, PA",22163,12446,-43.8
+ALX,"Alexandria, VA",372327,698724,87.7
+ALY,"Albany, OR",46161,49890,8.1
+AMS,"Amsterdam, NY",13737,12166,-11.4
+ANA,"Anaheim, CA",207869,82527,-60.3
+ARB,"Ann Arbor, MI",150296,69012,-54.1
+ARD,"Ardmore, PA",80899,52731,-34.8
+ARK,"Arkadelphia, AR",1292,7427,474.9
+ARN,"Auburn, CA",9348,17337,85.5
+ASD,"Ashland, VA",42110,39115,-7.1
+ATL,"Atlanta, GA",85039,61187,-28.0
+ATN,"Anniston, AL",4338,4167,-3.9
+AUS,"Austin, TX",47029,81494,73.3
+BAL,"Baltimore, MD",1333185,1373621,3.0
+BAM,"Bangor, MI",4037,5461,35.2
+BAR,"Barstow, CA",3299,17191,421.0
+BAS,"Bay Saint Louis, MS",2310,2687,16.4
+BBY,"Boston, MA",894547,218101,-75.6
+BCV,"Burke Centre, VA",14720,6931,-52.9
+BEL,"Bellingham, WA",66526,36602,-45.0
+BEN,"Benson, AZ",2195,3317,51.1
+BER,"Berlin, CT",34926,213862,512.3
+BFD,"Bakersfield, CA",376352,11724,-96.9
+BFX,"Buffalo, NY",51268,60863,18.7
+BHM,"Birmingham, AL",39492,19223,-51.3
+BIX,"Biloxi, MS",3009,2564,-14.8
+BKY,"Berkeley, CA",99352,37693,-62.1
+BLF,"Bellows Falls, VT",5388,8640,60.4
+BMT,"Beaumont, TX",3224,4085,26.7
+BNC,"Burlington, NC",32695,21693,-33.6
+BNG,"Bingen-White Salmon, WA",3455,5031,45.6
+BNL,"Bloomington-Normal, IL",230447,73137,-68.3
+BON,"Boston, MA",447961,167458,-62.6
+BOS,"Boston, MA",1884275,405948,-78.5
+BRA,"Brattleboro, VT",16682,9416,-43.6
+BRH,"Brookhaven, MS",3491,5074,45.3
+BRK,"Brunswick, ME",82812,81475,-1.6
+BRL,"Burlington, IA",6845,8350,22.0
+BRO,"Browning, MT",1202,2272,88.9
+BRP,"Bridgeport, CT",141022,286245,103.0
+BTL,"Battle Creek, MI",28930,59958,107.3
+BTN,"Burlington, VT",26476,19918,-24.8
+BUF,"Buffalo, NY",113519,116567,2.7
+BUR,"Burbank, CA",68774,92624,34.7
+BWI,"BWI Marshall Airport, MD",911275,717334,-21.3
+BYN,"Bryan, OH",5305,3189,-39.9
+CAM,"Camden, SC",3217,5005,55.6
+CBR,"Cleburne, TX",4191,5219,24.5
+CBS,"Columbus, WI",23503,12022,-48.9
+CDL,"Carbondale, IL",82122,84968,3.5
+CEN,"Centralia, IL",17638,16167,-8.3
+CHI,"Chicago, IL",3175856,1322198,-58.4
+CHM,"Champaign-Urbana, IL",254995,69290,-72.8
+CHS,"Charleston, SC",72041,55404,-23.1
+CHW,"Charleston, WV",7166,5789,-19.2
+CIC,"Chico, CA",9749,5331,-45.3
+CIN,"Cincinnati, OH",10846,14278,31.7
+CLA,"Claremont, NH",3308,2689,-18.7
+CLB,"Columbia, SC",31084,19765,-36.4
+CLE,"Cleveland, OH",61684,67281,9.1
+CLF,"Clifton Forge, VA",2178,2428,11.5
+CLP,"Culpeper, VA",21371,70808,231.3
+CLT,"Charlotte, NC",365614,421068,15.2
+CML,"Camarillo, CA",52903,17211,-67.5
+CMO,"Chemult, OR",2609,1714,-34.3
+CNV,"Castleton, VT",3041,9872,224.5
+COC,"Corcoran, CA",23631,23310,-1.4
+COI,"Connersville, IN",725,1260,73.6
+COT,"Coatesville, PA",15219,23178,52.3
+COV,"Connellsville, PA",4022,1944,-51.7
+COX,"Colfax, CA",6615,15000,126.8
+CPN,"Carpinteria, CA",27105,28741,6.0
+CRF,"Crawfordsville, IN",1928,2576,33.7
+CRN,"Creston, IA",2174,3993,83.7
+CRT,"Croton-Harmon, NY",61926,58770,-5.1
+CRV,"Carlinville, IL",9348,19168,105.0
+CSN,"Clemson, SC",4416,15047,240.7
+CTL,"Centralia, WA",32166,57703,79.4
+CUM,"Cumberland, MD",9403,13437,42.9
+CUT,"Cut Bank, MT",1256,7003,457.1
+CVS,"Charlottesville, VA",199357,274337,37.6
+CWH,"Cornwells Heights, PA",3011,9204,205.6
+CWT,"Chatsworth, CA",58787,40185,-31.6
+CYN,"Cary, NC",144942,196876,35.8
+DAL,"Dallas, TX",61939,59930,-3.2
+DAN,"Danville, VA",8324,12432,49.4
+DAV,"Davis, CA",275353,217453,-21.0
+DDG,"Dodge City, KS",4681,4472,-4.5
+DEM,"Deming, NM",1523,3714,143.9
+DEN,"Denver, CO",151914,62684,-58.7
+DER,"Dearborn, MI",67714,45374,-33.0
+DET,"Detroit, MI",74609,62432,-16.3
+DFB,"Deerfield Beach, FL",20915,25566,22.2
+DHM,"Durham, NH",48248,76014,57.5
+DIL,"Dillon, SC",7116,4483,-37.0
+DLB,"Delray Beach, FL",13830,16346,18.2
+DLD,"DeLand, FL",19366,21496,11.0
+DLK,"Detroit Lakes, MN",4724,8930,89.0
+DNC,"Durham, NC",154792,112669,-27.2
+DNK,"Denmark, SC",2858,9163,220.6
+DOA,"Dowagiac, MI",5165,9809,89.9
+DOV,"Dover, NH",57771,40960,-29.1
+DOW,"Downingtown, PA",60830,34203,-43.8
+DQN,"Du Quoin, IL",6908,4966,-28.1
+DRD,"Durand, MI",11579,6864,-40.7
+DRT,"Del Rio, TX",2147,1140,-46.9
+DUN,"Dunsmuir, CA",3794,3613,-4.8
+DVL,"Devils Lake, ND",3431,5739,67.2
+DWT,"Dwight, IL",4964,8542,72.1
+DYE,"Dyer, IN",1331,1952,46.7
+EDM,"Edmonds, WA",27887,58620,110.2
+EFG,"Effingham, IL",22775,16653,-26.9
+EKH,"Elkhart, IN",20541,6894,-66.4
+ELK,"Elko, NV",7058,7636,8.2
+ELP,"El Paso, TX",14676,36252,147.0
+ELT,"Elizabethtown, PA",58311,89309,53.2
+ELY,"Elyria, OH",13135,24368,85.5
+EMY,"Emeryville, CA",444450,204935,-53.9
+EPH,"Ephrata, WA",3727,7110,90.8
+ERI,"Erie, PA",18294,15197,-16.9
+ESM,"Essex, MT",1005,1817,80.9
+ESX,"Essex Junction, VT",17452,15216,-12.8
+EUG,"Eugene, OR",120102,146539,22.0
+EVR,"Everett, WA",38289,68303,78.4
+EWR,"Newark, NJ",201750,446468,121.3
+EXR,"Exeter, NH",69061,18888,-72.7
+EXT,"Exton, PA",143463,70987,-50.5
+FAR,"Fargo, ND",17709,23318,31.7
+FAY,"Fayetteville, NC",57742,28309,-51.0
+FBG,"Fredericksburg, VA",114796,56768,-50.5
+FED,"Fort Edward-Glens Falls, NY",8589,9362,9.0
+FFV,"Fairfield-Vacaville, CA",74502,24640,-66.9
+FLG,"Flagstaff, AZ",31693,36883,16.4
+FLN,"Flint, MI",27858,18369,-34.1
+FLO,"Florence, SC",41695,23023,-44.8
+FMD,"Fort Madison, IA",5940,8037,35.3
+FMG,"Fort Morgan, CO",3623,4367,20.5
+FMT,"Fremont, CA",32780,49347,50.5
+FNO,"Fresno, CA",302753,88034,-70.9
+FRA,"Framingham, MA",1320,9872,647.4
+FRE,"Freeport, ME",32176,23794,-26.0
+FTC,"Ticonderoga, NY",1750,3832,119.0
+FTL,"Fort Lauderdale, FL",45989,29713,-35.4
+FTN,"Fulton, KY",4547,6373,40.2
+FTW,"Fort Worth, TX",136888,148825,8.7
+FUL,"Fullerton, CA",240141,96875,-59.7
+GAC,"Santa Clara, CA",83286,39906,-52.1
+GAS,"Gastonia, NC",2146,5220,143.3
+GBB,"Galesburg, IL",71850,45415,-36.8
+GCK,"Garden City, KS",6516,6009,-7.8
+GDL,"Glendale, CA",53488,55680,4.1
+GFD,"Greenfield, MA",13290,80197,503.4
+GFK,"Grand Forks, ND",11036,8474,-23.2
+GGW,"Glasgow, MT",3052,3957,29.6
+GJT,"Grand Junction, CO",27402,27975,2.1
+GLE,"Gainesville, TX",7032,5289,-24.8
+GLM,"Gilman, IL",2171,4163,91.7
+GLN,"Glenview, IL",57752,67810,17.4
+GLP,"Gallup, NM",13568,2217,-83.7
+GNB,"Greensburg, PA",12784,8464,-33.8
+GNS,"Gainesville, GA",4743,14312,201.8
+GPK,"East Glacier Park, MT",10996,3586,-67.4
+GRA,"Granby, CO",3682,5500,49.4
+GRI,"Green River, UT",2551,1488,-41.7
+GRO,"Greensboro, NC",210652,123307,-41.5
+GRR,"Grand Rapids, MI",46664,36194,-22.4
+GRV,"Greenville, SC",8802,16482,87.3
+GSC,"Glenwood Springs, CO",42840,16603,-61.2
+GTA,"Goleta, CA",86987,51770,-40.5
+GUA,"Guadalupe, CA",12287,48767,296.9
+GUF,"Gulfport, MS",2278,2513,10.3
+GVB,"Grover Beach, CA",14563,25997,78.5
+GWD,"Greenwood, MS",13794,5638,-59.1
+HAM,"Hamlet, NC",4082,4848,18.7
+HAR,"Harrisburg, PA",357524,288756,-19.2
+HAS,"Hastings, NE",4089,5401,32.1
+HAV,"Havre, MT",7590,7048,-7.1
+HAY,"Hayward, CA",36947,12970,-64.9
+HAZ,"Hazlehurst, MS",1516,2169,43.0
+HBG,"Hattiesburg, MS",10530,6830,-35.1
+HEM,"Hermann, MO",27305,4829,-82.3
+HER,"Helper, UT",2302,4688,103.7
+HFD,"Hartford, CT",226312,919703,306.4
+HFY,"Harpers Ferry, WV",8427,4485,-46.8
+HGD,"Huntingdon, PA",5586,6731,20.5
+HHL,"Haverhill, MA",31123,23476,-24.6
+HIN,"Hinton, WV",2514,3145,25.1
+HLD,"Holdrege, NE",1760,1919,9.0
+HLK,"Holyoke, MA",2698,49984,1752.7
+HMD,"Hammond, LA",10108,8160,-19.3
+HMI,"Hammond-Whiting, IN",4639,11265,142.8
+HMW,"Homewood, IL",46211,27599,-40.3
+HNF,"Hanford, CA",121136,33202,-72.6
+HOL,"Hollywood, FL",24706,29736,20.4
+HOM,"Holland, MI",32774,28258,-13.8
+HOP,"Hope, AR",1766,3934,122.7
+HOS,"Houston, TX",22920,22839,-0.4
+HPT,"High Point, NC",43391,58039,33.8
+HUD,"Hudson, NY",274515,49693,-81.9
+HUN,"Huntington, WV",4489,8080,80.0
+HUT,"Hutchinson, KS",4125,8033,94.7
+IDP,"Independence, MO",6875,12423,80.7
+IND,"Indianapolis, IN",12655,33331,163.4
+IRV,"Irvine, CA",244373,77335,-68.4
+JAN,"Jackson, MS",38187,18169,-52.4
+JAX,"Jacksonville, FL",94914,57367,-39.6
+JEF,"Jefferson City, MO",41916,6071,-85.5
+JOL,"Joliet, IL",69420,41596,-40.1
+JSP,"Jesup, GA",9164,8212,-10.4
+JST,"Johnstown, PA",20436,9243,-54.8
+JXN,"Jackson, MI",18371,34634,88.5
+KAL,"Kalamazoo, MI",84042,48279,-42.6
+KAN,"Kannapolis, NC",41333,23785,-42.5
+KCY,"Kansas City, MO",164809,144851,-12.1
+KEE,"Kewanee, IL",13172,6419,-51.3
+KEL,"Kelso-Longview, WA",38914,34298,-11.9
+KFS,"Klamath Falls, OR",26102,16136,-38.2
+KIN,"Kingston, RI",213016,141150,-33.7
+KIS,"Kissimmee, FL",35006,33316,-4.8
+KKI,"Kankakee, IL",18244,22061,20.9
+KNG,"Kingman, AZ",9775,11825,21.0
+KTR,"Kingstree, SC",10184,15959,56.7
+KWD,"Kirkwood, MO",59959,24474,-59.2
+LAB,"Latrobe, PA",3420,4237,23.9
+LAF,"Lafayette, IN",4842,12189,151.7
+LAG,"La Grange, IL",9128,12908,41.4
+LAJ,"La Junta, CO",6246,5575,-10.8
+LAK,"Lakeland, FL",22038,12046,-45.3
+LAP,"La Plata, MO",10492,7087,-32.5
+LAU,"Laurel, MS",6281,5419,-13.7
+LAX,"Los Angeles, CA",1066614,841916,-21.1
+LCH,"Lake Charles, LA",3656,6839,87.1
+LCN,"Lincoln, IL",18239,30201,65.6
+LDB,"Lordsburg, NM",908,2671,193.9
+LEE,"Lee's Summit, MO",30451,7495,-75.4
+LEW,"Lewistown, PA",12494,5314,-57.5
+LEX,"Lexington Barbeque Festival, NC",706,11503,1529.3
+LFT,"Lafayette, LA",5169,15421,198.4
+LIB,"Libby, MT",4284,6584,53.7
+LMR,"Lamar, CO",1406,1916,36.3
+LMY,"Lamy, NM",7169,10571,47.5
+LNC,"Lancaster, PA",458298,164108,-64.2
+LNK,"Lincoln, NE",11798,36838,212.2
+LNS,"East Lansing, MI",73894,34140,-53.8
+LOD,"Lodi, CA",2769,25761,830.4
+LPE,"Lapeer, MI",8261,6855,-17.0
+LPS,"Lompoc-Surf, CA",9625,12298,27.8
+LRC,"Lawrence, KS",8293,11657,40.6
+LRK,"Little Rock, AR",25431,20568,-19.1
+LSE,"La Crosse, WI",39963,16881,-57.8
+LSV,"Las Vegas, NM",4164,3567,-14.3
+LVW,"Longview, TX",27858,5762,-79.3
+LWA,"Leavenworth, WA",12460,4125,-66.9
+LYH,"Lynchburg, VA",79574,149248,87.6
+MAC,"Macomb, IL",40453,11919,-70.5
+MAL,"Malta, MT",5100,3733,-26.8
+MAT,"Mattoon, IL",34319,21974,-36.0
+MAY,"Maysville, KY",2609,3215,23.2
+MBY,"Middlebury, VT",8630,6113,-29.2
+MCB,"McComb, MS",4024,6042,50.2
+MCD,"Merced, CA",135209,47812,-64.6
+MCG,"McGregor, TX",4369,5692,30.3
+MCK,"McCook, NE",3263,2770,-15.1
+MDN,"Meriden, CT",26577,193854,629.4
+MDR,"Madera, CA",25475,15174,-40.4
+MDT,"Mendota, IL",18177,8938,-50.8
+MEI,"Meridian, MS",8932,12609,41.2
+MEM,"Memphis, TN",65940,24972,-62.1
+MET,"Metropark, NJ",368391,826934,124.5
+MHL,"Marshall, TX",14484,19885,37.3
+MIA,"Miami, FL",89463,88448,-1.1
+MID,"Middletown, PA",66251,67549,2.0
+MIN,"Mineola, TX",7422,4191,-43.5
+MJY,"Mount Joy, PA",27539,48492,76.1
+MKA,"Milwaukee Airport-Trains, WI",123946,60365,-51.3
+MKE,"Milwaukee-Downtown, WI",555161,454409,-18.1
+MKS,"Marks, MS",5454,1251,-77.1
+MNG,"Montgomery, WV",618,2372,283.9
+MOD,"Modesto, CA",105596,36027,-65.9
+MOE,"Mobile, AL",12355,3452,-72.1
+MOT,"Minot, ND",18775,10826,-42.3
+MPK,"Moorpark, CA",37744,15742,-58.3
+MPR,"Montpelier-Berlin, VT",8034,8918,11.0
+MRB,"Martinsburg, WV",9082,6843,-24.7
+MRC,"Maricopa, AZ",14830,16546,11.6
+MSP,"St. Paul-Minneapolis, MN",199613,126397,-36.7
+MSS,"Manassas, VA",52758,65638,24.4
+MTP,"Mount Pleasant, IA",9228,3936,-57.3
+MTZ,"Martinez, CA",267796,66979,-75.0
+MVN,"Malvern, AR",2006,3094,54.2
+MVW,"Mount Vernon, WA",15255,27506,80.3
+MYS,"Mystic, CT",48882,46871,-4.1
+NBK,"New Brunswick, NJ",53435,253313,374.1
+NBN,"Newbern-Dyersburg, TN",4008,3168,-20.9
+NBU,"New Buffalo, MI",32571,11999,-63.2
+NCR,"New Carrollton, MD",244905,781556,219.1
+NDL,"Needles, CA",7394,6185,-16.3
+NEW,"Newton, KS",14500,7412,-48.9
+NFK,"Norfolk, VA",224374,92937,-58.6
+NFL,"Niagara Falls, NY",36522,49594,35.8
+NHT,"Northampton, MA",38907,20495,-47.3
+NHV,"New Haven, CT",853266,1796337,110.5
+NIB,"New Iberia, LA",1339,1387,3.6
+NLC,"New London, CT",179875,135080,-24.9
+NLS,"Niles, MI",16259,25627,57.6
+NOL,"New Orleans, LA",188071,101550,-46.0
+NOR,"Norman, OK",13858,3599,-74.0
+NPN,"Newport News, VA",109799,110272,0.4
+NPV,"Naperville, IL",34737,27327,-21.3
+NRG,"Northridge, CA",24363,15107,-38.0
+NRK,"Newark, DE",49510,50197,1.4
+NRO,"New Rochelle, NY",155000,225443,45.4
+NSF,"North Carolina State Fair, NC",446,33157,7334.4
+NWK,"Newark, NJ",884002,2610595,195.3
+NYF,"New York State Fair, NY",3820,27932,631.0
+NYP,"New York, NY",13037414,10734939,-17.7
+OAC,"Oakland, CA",24284,25606,5.4
+OKC,"Oklahoma City, OK",57159,22910,-59.9
+OKE,"Okeechobee, FL",4672,3241,-30.6
+OKJ,"Oakland, CA",246498,120979,-50.9
+OLT,"San Diego, CA",308805,53731,-82.6
+OLW,"Olympia-Lacey, WA",82518,90588,9.8
+OMA,"Omaha, NE",25946,36766,41.7
+ONA,"Ontario, CA",4883,6707,37.3
+ORB,"Old Orchard Beach, ME",17493,8984,-48.6
+ORC,"Oregon City, OR",21923,22113,0.9
+ORL,"Orlando, FL",145056,66314,-54.3
+OSB,"Old Saybrook, CT",87196,58058,-33.4
+OSC,"Osceola, IA",13579,5903,-56.5
+OSD,"Oceanside, CA",211533,165067,-22.0
+OTM,"Ottumwa, IA",8548,9827,15.0
+OXN,"Oxnard, CA",92194,112778,22.3
+PAG,"Pascagoula, MS",1029,2019,96.3
+PAK,"Palatka, FL",17241,17942,4.1
+PAO,"Paoli, PA",243995,99916,-59.0
+PAR,"Parkesburg, PA",27273,35908,31.7
+PBF,"Poplar Bluff, MO",5262,5296,0.6
+PCT,"Princeton, IL",29017,16732,-42.3
+PDX,"Portland, OR",586257,592077,1.0
+PGH,"Pittsburgh, PA",141146,205442,45.6
+PHL,"Philadelphia, PA",5586174,5919416,6.0
+PHN,"North Philadelphia, PA",1053,30623,2808.3
+PIC,"Picayune, MS",2507,3708,47.9
+PIT,"Pittsfield, MA",9197,7268,-21.0
+PJC,"Princeton Junction, NJ",136236,214380,57.4
+PLB,"Plattsburgh, NY",10744,5729,-46.7
+PLO,"Plano, IL",5724,5944,3.8
+PNT,"Pontiac, MI",13593,71405,425.3
+POG,"Portage, WI",10162,6593,-35.1
+POH,"Port Henry, NY",1025,5683,453.9
+PON,"Pontiac, IL",14839,15694,5.8
+POR,"Portland, ME",167342,90399,-46.0
+POS,"Pomona, CA",1434,6324,341.1
+POU,"Poughkeepsie, NY",137122,95438,-30.4
+PRB,"Paso Robles, CA",9510,6003,-36.9
+PRC,"Prince, WV",1645,3933,139.1
+PRO,"Provo, UT",8589,7610,-11.4
+PSC,"Pasco, WA",19275,13106,-32.0
+PSN,"Palm Springs, CA",1687,6037,257.7
+PTB,"Petersburg, VA",60480,152493,152.1
+PTH,"Port Huron, MI",13555,9956,-26.5
+PUR,"Purcell, OK",2015,7566,275.5
+PVD,"Providence, RI",797019,239523,-69.9
+PVL,"Pauls Valley, OK",3259,3385,3.8
+QAN,"Quantico, VA",20491,35909,75.2
+QCY,"Quincy, IL",29251,20548,-29.8
+RAT,"Raton, NM",9171,5303,-42.2
+RDD,"Redding, CA",8505,4234,-50.2
+RDW,"Red Wing, MN",21666,12389,-42.8
+REN,"Rensselaer, IN",429,1462,240.1
+RGH,"Raleigh, NC",5203,304826,5758.7
+RHI,"Rhinecliff, NY",218942,62112,-71.6
+RIC,"Richmond, CA",202257,70901,-64.9
+RIV,"Riverside, CA",9467,8654,-8.6
+RKV,"Rockville, MD",5616,7224,28.6
+RLN,"Rocklin, CA",8911,29937,235.9
+RMT,"Rocky Mount, NC",54383,48542,-10.7
+RNK,"Roanoke, VA",105926,26560,-74.9
+RNO,"Reno, NV",62827,40689,-35.2
+ROC,"Rochester, NY",153125,144365,-5.7
+ROM,"Rome, NY",12486,28874,131.3
+ROY,"Royal Oak, MI",24855,36706,47.7
+RPH,"Randolph, VT",2932,2395,-18.3
+RSP,"Rouses Point, NY",1276,2426,90.2
+RSV,"Roseville, CA",37156,37868,1.9
+RTE,"Route 128, MA",568300,114186,-79.9
+RTL,"Rantoul, IL",5865,6984,19.1
+RUD,"Rutland, VT",10536,27360,159.7
+RUG,"Rugby, ND",2806,3897,38.9
+RVM,"Richmond, VA",129928,139589,7.4
+RVR,"Richmond, VA",506023,302770,-40.2
+SAB,"St. Albans, VT",3953,10159,157.0
+SAC,"Sacramento, CA",764099,445905,-41.6
+SAL,"Salisbury, NC",28674,54930,91.6
+SAN,"San Diego, CA",489961,278334,-43.2
+SAO,"Saco, ME",51816,33452,-35.4
+SAR,"Saratoga Springs, NY",36145,36894,2.1
+SAS,"San Antonio, TX",63676,117531,84.6
+SAV,"Savannah, GA",73968,108274,46.4
+SBA,"Santa Barbara, CA",339569,134511,-60.4
+SBG,"Sebring, FL",17805,8318,-53.3
+SBY,"Shelby, MT",7107,7860,10.6
+SCC,"Santa Clara, CA",40931,12129,-70.4
+SCD,"St. Cloud, MN",8246,11984,45.3
+SCH,"Schriever, LA",1286,3375,162.5
+SDL,"Slidell, LA",6682,7978,19.4
+SDY,"Schenectady, NY",63212,123044,94.7
+SEA,"Seattle, WA",736898,289289,-60.7
+SED,"Sedalia, MO",10275,12846,25.0
+SIM,"Simi Valley, CA",40002,25778,-35.6
+SJC,"San Jose, CA",156081,235620,51.0
+SJM,"St. Joseph-Benton Harbor, MI",14731,6291,-57.3
+SKN,"Stockton, CA",274639,33276,-87.9
+SKT,"Stockton, CA",5094,20286,298.2
+SKY,"Sandusky, OH",10442,9105,-12.8
+SLC,"Salt Lake City, UT",36073,145540,303.5
+SLM,"Salem, OR",59734,55309,-7.4
+SLO,"San Luis Obispo, CA",91555,230500,151.8
+SMC,"San Marcos, TX",10403,15297,47.0
+SMT,"Summit, IL",19729,8742,-55.7
+SNA,"Santa Ana, CA",109989,83898,-23.7
+SNB,"San Bernardino, CA",9576,29362,206.6
+SNC,"San Juan Capistrano, CA",162210,75205,-53.6
+SND,"Sanderson, TX",276,842,204.0
+SNP,"San Clemente Pier, CA",16486,15762,-4.4
+SNS,"Salinas, CA",20832,23178,11.3
+SOB,"South Bend, IN",18676,14180,-24.1
+SOL,"Solana Beach, CA",202986,50944,-74.9
+SOP,"Southern Pines, NC",7058,13718,94.3
+SPB,"Spartanburg, SC",3706,13394,261.3
+SPG,"Springfield, MA",162613,1602960,885.7
+SPI,"Springfield, IL",159998,55805,-65.1
+SPK,"Spokane, WA",37480,45953,22.6
+SPL,"Staples, MN",6691,9317,39.2
+SPM,"South Shore-South Portsmouth, KY",1454,1731,19.1
+SPT,"Sandpoint, ID",5808,4304,-25.9
+SSM,"Selma-Smithfield, NC",17698,18985,7.3
+STA,"Staunton, VA",5519,7318,32.6
+STL,"St. Louis, MO",395715,549711,38.9
+STM,"Stamford, CT",398958,444914,11.5
+STN,"Stanley, ND",2660,4081,53.4
+STS,"New Haven, CT",20694,121898,489.0
+STW,"Stanwood, WA",4983,10402,108.7
+SUI,"Suisun-Fairfield, CA",65360,56640,-13.3
+SVT,"Sturtevant, WI",55779,48481,-13.1
+SYR,"Syracuse, NY",161900,194315,20.0
+TAC,"Tacoma, WA",110754,89192,-19.5
+TAY,"Taylor, TX",6209,3088,-50.3
+TCA,"Toccoa, GA",2095,4056,93.7
+TCL,"Tuscaloosa, AL",10725,17512,63.3
+THN,"Thurmond, WV",593,1729,191.7
+TOH,"Tomah, WI",17997,6931,-61.5
+TOL,"Toledo, OH",46755,34386,-26.5
+TOP,"Topeka, KS",9096,11791,29.6
+TPA,"Tampa, FL",145295,40553,-72.1
+TPL,"Temple, TX",15231,13882,-8.9
+TRE,"Trenton, NJ",442137,1732932,291.9
+TRI,"Trinidad, CO",6917,1522,-78.0
+TRK,"Turlock-Denair, CA",31978,9616,-69.9
+TRM,"Troy, MI",38237,23495,-38.6
+TRU,"Truckee, CA",16496,16976,2.9
+TUK,"Tukwila, WA",48063,31854,-33.7
+TUS,"Tucson, AZ",25260,69767,176.2
+TXA,"Texarkana, AR",7036,7528,7.0
+TYR,"Tyrone, PA",4416,3418,-22.6
+UCA,"Utica, NY",83975,96908,15.4
+VAN,"Vancouver, WA",145649,116490,-20.0
+VEC,"Ventura, CA",79936,23677,-70.4
+VNC,"Van Nuys, CA",67884,113596,67.3
+VRN,"Ferrisburgh-Vergennes, VT",3744,9205,145.8
+VRV,"Victorville, CA",7227,9550,32.1
+WAB,"Waterbury-Stowe, VT",6273,6315,0.7
+WAC,"Wasco, CA",23548,3222,-86.3
+WAH,"Washington, MO",17021,8682,-49.0
+WAR,"Warrensburg, MO",11158,28722,157.4
+WAS,"Washington, DC",6010221,3539023,-41.1
+WBG,"Williamsburg, VA",74189,118890,60.3
+WDB,"Woodbridge, VA",37278,22404,-39.9
+WDL,"Wisconsin Dells, WI",24036,8719,-63.7
+WEM,"Wells, ME",63902,28737,-55.0
+WEN,"Wenatchee, WA",12512,15928,27.3
+WFD,"Wallingford, CT",12604,136728,984.7
+WFH,"Whitefish, MT",42766,13031,-69.5
+WGL,"West Glacier, MT",4799,1841,-61.6
+WHL,"Whitehall, NY",1527,2391,56.6
+WIH,"Wishram, WA",1545,3538,128.9
+WIL,"Wilmington, DE",814516,461457,-43.3
+WIN,"Winona, MN",23672,18927,-20.0
+WIP,"Fraser-Winter Park, CO",53658,8020,-85.1
+WLN,"Wilson, NC",59186,20266,-65.8
+WLO,"Winslow, AZ",3768,4130,9.6
+WLY,"Westerly, RI",58288,47001,-19.4
+WND,"Windsor, CT",21053,115684,449.5
+WNL,"Windsor Locks, CT",32654,195563,498.9
+WNM,"Windsor-Mt. Ascutney, VT",1666,2212,32.8
+WNN,"Winnemucca, NV",5230,3037,-41.9
+WNR,"Walnut Ridge, AR",4258,3231,-24.1
+WOB,"Woburn, MA",17708,48231,172.4
+WOR,"Worcester, MA",5170,31138,502.3
+WPB,"West Palm Beach, FL",43603,36924,-15.3
+WPK,"Winter Park, FL",25452,51559,102.6
+WPT,"Wolf Point, MT",3307,3247,-1.8
+WRJ,"White River Junction, VT",16450,10579,-35.7
+WSP,"Westport, NY",3624,7013,93.5
+WSS,"White Sulphur Springs, WV",6508,1908,-70.7
+WTH,"Winter Haven, FL",30308,21222,-30.0
+WTI,"Waterloo, IN",21177,7687,-63.7
+WTN,"Williston, ND",16555,3825,-76.9
+YAZ,"Yazoo City, MS",3515,2629,-25.2
+YEM,"Yemassee, SC",8911,8933,0.2
+YNY,"Yonkers, NY",47156,54788,16.2
+YUM,"Yuma, AZ",4722,5487,16.2

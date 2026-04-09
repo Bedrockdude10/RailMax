@@ -11,12 +11,13 @@ Usage:
 
 Pipeline stages (in dependency order):
   1. parse_and_join   — join raw data → data/processed/stations.csv
-  2. features         — add engineered features (metro_pop, NEC, etc.)
-  3. build_gtfs       — add GTFS schedule features
+  2. features         — add engineered features (metro_pop, nearby stations, etc.)
+  3. build_gtfs       — add GTFS schedule features + NEC membership flag
   4. build_acs        — add ACS commute/income features (needs FCC API on first run)
   5. build_college    — add college enrollment proximity features
-  6. train            — EBM cross-validation + final model
-  7. build_map        — generate underservice map HTML
+  6. build_tourism    — add overseas visitor features for top-50 tourist MSAs
+  7. train            — EBM cross-validation + final model
+  8. build_map        — generate underservice map HTML
 
 Stages 2–5 all read/write data/processed/stations.csv in place.  They are
 independent of each other (each adds its own columns) but must run serially
@@ -37,12 +38,13 @@ sys.path.insert(0, str(SRC))
 # Each entry: (step_name, module_name, description)
 PIPELINE = [
     ("parse_and_join",  "parse_and_join",          "Join raw data → stations.csv"),
-    ("features",        "features",                "Engineered features (metro_pop, NEC, nearby stations)"),
-    ("build_gtfs",      "build_gtfs_features",     "GTFS schedule features (departures, routes, dwell time)"),
-    ("build_acs",       "build_acs_features",       "ACS commute mode + household income"),
-    ("build_college",   "build_college_features",   "College enrollment proximity"),
-    ("train",           "train",                    "EBM cross-validation + final model"),
-    ("build_map",       "build_map",                "Generate underservice map HTML"),
+    ("features",        "features",                "Engineered features (metro_pop, nearby stations)"),
+    ("build_gtfs",      "build_gtfs_features",     "GTFS schedule features + NEC membership flag"),
+    ("build_acs",       "build_acs_features",      "ACS commute mode + household income"),
+    ("build_college",   "build_college_features",  "College enrollment proximity"),
+    ("build_tourism",   "add_tourism_features",    "Overseas visitor features (top-50 tourist MSAs)"),
+    ("train",           "train",                   "EBM cross-validation + final model"),
+    ("build_map",       "build_map",               "Generate underservice map HTML"),
 ]
 
 STEP_NAMES = [name for name, _, _ in PIPELINE]

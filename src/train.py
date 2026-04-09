@@ -3,9 +3,12 @@ train.py
 
 EBM training pipeline for rail station ridership prediction.
 
-Validation strategy: 5-fold stratified cross-validation, stratified on
-log-ridership quantiles so every fold sees the full range of station sizes.
-After CV, a final model is fit on all data and saved.
+Validation strategy: 5-fold stratified group CV. Stations are first clustered
+into 20 geographic groups via k-means on raw lat/lon; groups are passed to
+StratifiedGroupKFold so that geographically proximate stations (e.g. Trenton
+and Princeton Junction) always appear in the same fold, preventing leakage.
+Stratification is on log-ridership quantiles so every fold sees the full range
+of station sizes. After CV, a final model is fit on all data and saved.
 """
 
 import pickle
@@ -16,8 +19,9 @@ import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 from interpret.glassbox import ExplainableBoostingRegressor
+from sklearn.cluster import KMeans
 from sklearn.metrics import mean_squared_error, r2_score
-from sklearn.model_selection import StratifiedKFold
+from sklearn.model_selection import StratifiedGroupKFold
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "src"))
@@ -160,23 +164,51 @@ def compute_metrics(y_true_log: np.ndarray, y_pred_log: np.ndarray,
     return {"label": label, "rmse_log": rmse_log, "r2": r2}
 
 
+# ── Geographic clustering ─────────────────────────────────────────────────────
+
+N_GEO_CLUSTERS = 20
+
+def make_geo_groups(df: pd.DataFrame) -> np.ndarray:
+    """
+    Cluster stations into N_GEO_CLUSTERS geographic groups via k-means on
+    raw lat/lon.  Stations with missing coordinates are assigned cluster -1
+    (treated as their own singleton group by StratifiedGroupKFold).
+    """
+    has_coords = df["lat"].notna() & df["lon"].notna()
+    coords = df.loc[has_coords, ["lat", "lon"]].values
+
+    km = KMeans(n_clusters=N_GEO_CLUSTERS, random_state=42, n_init=10)
+    labels = km.fit_predict(coords)
+
+    groups = np.full(len(df), -1, dtype=int)
+    groups[has_coords.values] = labels
+
+    # Diagnostic: cluster sizes
+    unique, counts = np.unique(labels, return_counts=True)
+    print(f"  Geographic clusters (k={N_GEO_CLUSTERS}): "
+          f"min={counts.min()}, median={int(np.median(counts))}, max={counts.max()} stations/cluster")
+
+    return groups
+
+
 # ── Cross-validation ───────────────────────────────────────────────────────────
 
 def run_cv(X: pd.DataFrame, y_log: np.ndarray,
-           name_col: pd.Series) -> tuple[np.ndarray, list]:
+           name_col: pd.Series, groups: np.ndarray) -> tuple[np.ndarray, list]:
     """
-    5-fold stratified CV on log-ridership quantiles.
+    5-fold stratified group CV on log-ridership quantiles.
+    Groups are geographic clusters so nearby stations stay in the same fold.
     Returns out-of-fold predictions (same length as X) and per-fold metrics.
     """
     # Bin log-ridership into N_FOLDS quantiles for stratification
     quantile_bins = pd.qcut(y_log, q=N_FOLDS, labels=False, duplicates="drop")
 
-    skf = StratifiedKFold(n_splits=N_FOLDS, shuffle=True, random_state=42)
+    sgkf = StratifiedGroupKFold(n_splits=N_FOLDS)
 
     oof_preds = np.zeros(len(X))
     fold_metrics = []
 
-    for fold, (train_idx, val_idx) in enumerate(skf.split(X, quantile_bins), 1):
+    for fold, (train_idx, val_idx) in enumerate(sgkf.split(X, quantile_bins, groups=groups), 1):
         X_tr, X_val = X.iloc[train_idx], X.iloc[val_idx]
         y_tr, y_val = y_log[train_idx], y_log[val_idx]
 
@@ -215,9 +247,13 @@ def main():
 
     print(f"\nFeatures ({len(X.columns)}): {X.columns.tolist()}")
 
-    # ── 5-fold stratified CV ──
-    print(f"\nRunning {N_FOLDS}-fold stratified CV …")
-    oof_preds, fold_metrics = run_cv(X, y_log, name_col)
+    # ── Geographic grouping for CV ──
+    print(f"\nClustering stations into geographic groups …")
+    groups = make_geo_groups(df)
+
+    # ── 5-fold stratified group CV ──
+    print(f"\nRunning {N_FOLDS}-fold stratified group CV …")
+    oof_preds, fold_metrics = run_cv(X, y_log, name_col, groups)
 
     # Aggregate OOF metrics (every station predicted exactly once)
     print("\n── Overall cross-validation (out-of-fold) ──")

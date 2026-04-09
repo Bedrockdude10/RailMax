@@ -84,9 +84,6 @@ ALL_FEATURES = BINARY_IPCD_FEATURES + NUMERIC_V0_FEATURES + CATEGORICAL_FEATURES
 
 TARGET = "annual_ridership"
 
-# Hold-out station codes (NTAD Code column).
-# WAS = Washington Union Station, BOS = Boston South Station,
-# PHL = Philadelphia 30th Street, CHI = Chicago Union Station
 HOLDOUT_CODES = {"WAS", "BOS", "PHL", "CHI"}
 
 
