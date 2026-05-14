@@ -48,9 +48,9 @@ def make_ebm(feature_names: list) -> ExplainableBoostingRegressor:
     return ExplainableBoostingRegressor(
         feature_names=feature_names,
         interactions=3,
-        max_bins=256,
+        max_bins=1024,
         learning_rate=0.01,
-        min_samples_leaf=2,
+        min_samples_leaf=5,
         random_state=42,
     )
 
@@ -99,16 +99,24 @@ def save_shape_data(ebm: ExplainableBoostingRegressor, feature_names: list):
     """
     Save shape function values to CSV for programmatic analysis.
 
-    Outputs two files:
-    - shape_functions.csv: one row per (feature, bin) with x value and score
-    - feature_importance.csv: one row per feature, ranked by mean |score|
+    Outputs three files:
+    - shape_functions.csv: one row per (feature, bin) for 1D terms
+    - interaction_shape_functions.csv: one row per (term, x_bin, y_bin) for 2D terms
+    - feature_importance.csv: one row per term (1D + 2D), ranked by mean |score|
     """
     explanation = ebm.explain_global(name="EBM v1")
 
+    # ebm.term_names_ lists all terms in order: single features first, then
+    # interaction terms named like "feature_a & feature_b". feature_names
+    # passed in only covers the singles, so use term_names_ as the source of
+    # truth for total term count.
+    term_names = list(getattr(ebm, "term_names_", feature_names))
+
     rows = []
+    interaction_rows = []
     importance_rows = []
 
-    for i, name in enumerate(feature_names):
+    for i, name in enumerate(term_names):
         try:
             feat_data = explanation.data(i)
         except Exception:
@@ -116,17 +124,50 @@ def save_shape_data(ebm: ExplainableBoostingRegressor, feature_names: list):
 
         names = feat_data.get("names", [])
         scores = feat_data.get("scores", [])
-        if len(names) == 0 or len(scores) == 0:
+        if scores is None or len(scores) == 0:
             continue
-        if isinstance(scores, np.ndarray) and scores.ndim == 2:
-            continue  # skip interaction terms
 
         scores_arr = np.array(scores)
+
+        # ── 2D interaction term ──
+        if scores_arr.ndim == 2:
+            # `names` is a list of two arrays: bin edges for each axis.
+            # Score range is the full spread of effects on log(ridership).
+            mean_abs_score = float(np.mean(np.abs(scores_arr)))
+            score_range = float(scores_arr.max() - scores_arr.min())
+
+            importance_rows.append({
+                "feature": name,
+                "term_type": "interaction",
+                "mean_abs_score": round(mean_abs_score, 5),
+                "score_range": round(score_range, 5),
+                "n_bins": scores_arr.size,
+            })
+
+            # Save the full 2D grid in long format.
+            x_axis = list(names[0]) if len(names) > 0 else list(range(scores_arr.shape[0]))
+            y_axis = list(names[1]) if len(names) > 1 else list(range(scores_arr.shape[1]))
+            for ix, x_val in enumerate(x_axis):
+                for iy, y_val in enumerate(y_axis):
+                    if ix < scores_arr.shape[0] and iy < scores_arr.shape[1]:
+                        interaction_rows.append({
+                            "interaction": name,
+                            "x": x_val,
+                            "y": y_val,
+                            "score": round(float(scores_arr[ix, iy]), 5),
+                        })
+            continue
+
+        # ── 1D feature ──
+        if len(names) == 0:
+            continue
+
         mean_abs_score = float(np.mean(np.abs(scores_arr)))
         score_range = float(scores_arr.max() - scores_arr.min())
 
         importance_rows.append({
             "feature": name,
+            "term_type": "main",
             "mean_abs_score": round(mean_abs_score, 5),
             "score_range": round(score_range, 5),
             "n_bins": len(names),
@@ -142,12 +183,19 @@ def save_shape_data(ebm: ExplainableBoostingRegressor, feature_names: list):
     shape_df = pd.DataFrame(rows)
     shape_df.to_csv(METRICS_DIR / "shape_functions.csv", index=False)
 
+    interaction_df = pd.DataFrame(interaction_rows)
+    interaction_df.to_csv(METRICS_DIR / "interaction_shape_functions.csv", index=False)
+
     imp_df = pd.DataFrame(importance_rows).sort_values("mean_abs_score", ascending=False)
     imp_df.to_csv(METRICS_DIR / "feature_importance.csv", index=False)
 
     print(f"  Shape data saved to {METRICS_DIR}/shape_functions.csv")
-    print(f"\nFeature importance (mean |score|):")
-    print(imp_df.to_string(index=False))
+    print(f"  Interaction data saved to {METRICS_DIR}/interaction_shape_functions.csv")
+    print(f"\nFeature importance (mean |score|, top 40):")
+    print(imp_df.head(40).to_string(index=False))
+
+    n_interactions = (imp_df["term_type"] == "interaction").sum()
+    print(f"\n  Total terms: {len(imp_df)} ({n_interactions} interactions)")
 
 
 # ── Metrics ────────────────────────────────────────────────────────────────────
@@ -194,10 +242,13 @@ def make_geo_groups(df: pd.DataFrame) -> np.ndarray:
 # ── Cross-validation ───────────────────────────────────────────────────────────
 
 def run_cv(X: pd.DataFrame, y_log: np.ndarray,
-           name_col: pd.Series, groups: np.ndarray) -> tuple[np.ndarray, list]:
+           name_col: pd.Series, groups: np.ndarray,
+           sample_weight: np.ndarray) -> tuple[np.ndarray, list]:
     """
     5-fold stratified group CV on log-ridership quantiles.
     Groups are geographic clusters so nearby stations stay in the same fold.
+    sample_weight is passed to ebm.fit on the training fold only — OOF metrics
+    are still computed unweighted so they reflect honest per-station accuracy.
     Returns out-of-fold predictions (same length as X) and per-fold metrics.
     """
     # Bin log-ridership into N_FOLDS quantiles for stratification
@@ -213,7 +264,7 @@ def run_cv(X: pd.DataFrame, y_log: np.ndarray,
         y_tr, y_val = y_log[train_idx], y_log[val_idx]
 
         ebm = make_ebm(X.columns.tolist())
-        ebm.fit(X_tr, y_tr)
+        ebm.fit(X_tr, y_tr, sample_weight=sample_weight[train_idx])
 
         preds = ebm.predict(X_val)
         oof_preds[val_idx] = preds
@@ -241,9 +292,30 @@ def main():
     df = df[df[TARGET].notna()].reset_index(drop=True)
     print(f"  {len(df)} stations with ridership")
 
+    # Drop stations with no GTFS coverage (NJ Transit Atlantic City Line,
+    # San Joaquin / ACE corridor, VIA Rail Canada, seasonal/event stops).
+    # Their schedules aren't in the GTFS feed, so weekly_departures etc. are
+    # NaN — the model has no honest way to score them. ~44 stations, ~2% of
+    # total ridership. They'll be absent from oof_predictions_v1.csv and
+    # therefore from the underservice map; the README should note this.
+    n_before = len(df)
+    df = df[df["weekly_departures"].notna()].reset_index(drop=True)
+    n_dropped = n_before - len(df)
+    print(f"  Dropped {n_dropped} GTFS-missing stations; {len(df)} remain for training")
+
     X = get_feature_matrix(df)
     y_log = df["log_ridership"].values
     name_col = df["station_name"] if "station_name" in df.columns else df["map_station"]
+
+    # Sample weights: sqrt(ridership) tilts the optimizer toward getting
+    # high-ridership stations right. Without this the loss is roughly equal
+    # across the full ~4-orders-of-magnitude target range, which produces a
+    # monotonic shrinkage bias — every prediction pulled toward the median.
+    sample_weight = np.sqrt(df[TARGET].values.astype(float))
+    # Normalise so the mean weight is 1.0 (keeps learning_rate-scale intuitions intact)
+    sample_weight = sample_weight * (len(sample_weight) / sample_weight.sum())
+    print(f"  Sample weights: sqrt(ridership), normalised to mean=1.0  "
+          f"(range {sample_weight.min():.3f} – {sample_weight.max():.3f})")
 
     print(f"\nFeatures ({len(X.columns)}): {X.columns.tolist()}")
 
@@ -253,7 +325,7 @@ def main():
 
     # ── 5-fold stratified group CV ──
     print(f"\nRunning {N_FOLDS}-fold stratified group CV …")
-    oof_preds, fold_metrics = run_cv(X, y_log, name_col, groups)
+    oof_preds, fold_metrics = run_cv(X, y_log, name_col, groups, sample_weight)
 
     # Aggregate OOF metrics (every station predicted exactly once)
     print("\n── Overall cross-validation (out-of-fold) ──")
@@ -269,7 +341,7 @@ def main():
     # ── Final model on all data ──
     print("\nFitting final model on all data …")
     final_ebm = make_ebm(X.columns.tolist())
-    final_ebm.fit(X, y_log)
+    final_ebm.fit(X, y_log, sample_weight=sample_weight)
     print("  Done.")
 
     # ── Save model ──

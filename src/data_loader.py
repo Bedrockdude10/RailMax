@@ -46,16 +46,21 @@ CATEGORICAL_FEATURES = [
 ]
 
 # GTFS-derived features (computed by src/build_gtfs_features.py)
+# Dropped from this list (still computed/saved to stations.csv, just not fed to the model):
+#   - num_directions: constant (=2 for all 515 GTFS-covered stations)
+#   - max_route_length_km: 0.88 Spearman corr with avg_route_length_km
+#   - pct_long_distance: hand-picked 500km threshold + hand-picked aggregator,
+#       not real network structure. Inverted-U shape function confirmed it was
+#       distorting predictions.
+#   - avg_route_length_km: same class of hand-constructed feature — averages
+#       route lengths across routes serving a station, losing the actual
+#       distribution. Partly redundant with pct_long_distance (0.79 Spearman).
 GTFS_FEATURES = [
     "weekly_departures",
     "is_terminal",
     "avg_dwell_time_sec",
     "service_span_hours",
     "avg_stop_sequence_pct",
-    "num_directions",
-    "avg_route_length_km",
-    "max_route_length_km",
-    "pct_long_distance",
 ]
 
 # ACS commute mode features (computed by src/build_acs_features.py)
@@ -78,7 +83,14 @@ TOURISM_FEATURES = [
     "overseas_visitors_thousands",
 ]
 
-ALL_FEATURES = BINARY_IPCD_FEATURES + NUMERIC_V0_FEATURES + CATEGORICAL_FEATURES + GTFS_FEATURES + ACS_FEATURES + COLLEGE_FEATURES + TOURISM_FEATURES
+# Graph-based features (computed by src/build_graph_features.py)
+GRAPH_FEATURES = [
+    "dest_metro_pop_weighted_sum",
+    "n_distinct_destinations",
+    "eigenvector_centrality",
+]
+
+ALL_FEATURES = BINARY_IPCD_FEATURES + NUMERIC_V0_FEATURES + CATEGORICAL_FEATURES + GTFS_FEATURES + ACS_FEATURES + COLLEGE_FEATURES + TOURISM_FEATURES + GRAPH_FEATURES
 
 TARGET = "annual_ridership"
 
@@ -156,6 +168,13 @@ def load_stations(path: Optional[Path] = None) -> pd.DataFrame:
     for col in TOURISM_FEATURES:
         if col not in df.columns:
             df[col] = np.nan
+
+    # ── Graph features: 0 for stations not in GTFS graph (no destinations served) ──
+    for col in GRAPH_FEATURES:
+        if col not in df.columns:
+            df[col] = 0.0
+        else:
+            df[col] = df[col].fillna(0.0)
 
     return df
 

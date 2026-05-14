@@ -43,6 +43,7 @@ PIPELINE = [
     ("build_acs",       "build_acs_features",      "ACS commute mode + household income"),
     ("build_college",   "build_college_features",  "College enrollment proximity"),
     ("build_tourism",   "add_tourism_features",    "Overseas visitor features (top-50 tourist MSAs)"),
+    ("build_graph",     "build_graph_features",    "Directed graph features (dest metro_pop sum, centrality)"),
     ("build_candidates",  "build_candidates",              "Generate expansion candidate rows for top-100 cities without Amtrak"),
     ("train",            "train",                        "EBM cross-validation + final model"),
     ("predict_expansion", "predict_expansion_candidates", "Predict ridership for expansion candidates"),
